@@ -1,0 +1,541 @@
+--
+-- PostgreSQL database dump
+--
+
+SET client_encoding = 'LATIN1';
+SET check_function_bodies = false;
+SET client_min_messages = warning;
+
+--
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: postgres
+--
+
+COMMENT ON SCHEMA public IS 'Standard public schema';
+
+
+SET search_path = public, pg_catalog;
+
+SET default_tablespace = '';
+
+SET default_with_oids = false;
+
+--
+-- Name: acl; Type: TABLE; Schema: public; Owner: uportal; Tablespace: 
+--
+
+CREATE TABLE acl (
+    pool_id integer NOT NULL,
+    user_id integer NOT NULL
+);
+
+
+ALTER TABLE public.acl OWNER TO uportal;
+
+--
+-- Name: app_input; Type: TABLE; Schema: public; Owner: uportal; Tablespace: 
+--
+
+CREATE TABLE app_input (
+    app_id integer NOT NULL,
+    "index" integer NOT NULL,
+    description character varying(100),
+    mimetype character varying(100) DEFAULT 'text/plain'::character varying NOT NULL,
+    dspace_subject boolean DEFAULT false NOT NULL,
+    dspace_store boolean DEFAULT false NOT NULL,
+    required boolean DEFAULT true
+);
+
+
+ALTER TABLE public.app_input OWNER TO uportal;
+
+--
+-- Name: app_list; Type: TABLE; Schema: public; Owner: uportal; Tablespace: 
+--
+
+CREATE TABLE app_list (
+    app_id integer DEFAULT nextval(('app_seq_id'::text)::regclass) NOT NULL,
+    app_name character varying(1024),
+    app_script character varying(1024) NOT NULL,
+    pool_id integer NOT NULL,
+    publishable boolean DEFAULT false NOT NULL,
+    current boolean DEFAULT false,
+    dspace_collection integer,
+    ncpus integer,
+    memory integer,
+    wall_time integer DEFAULT 48
+);
+
+
+ALTER TABLE public.app_list OWNER TO uportal;
+
+--
+-- Name: app_output; Type: TABLE; Schema: public; Owner: uportal; Tablespace: 
+--
+
+CREATE TABLE app_output (
+    app_id integer NOT NULL,
+    "index" integer NOT NULL,
+    description character varying(100),
+    dspace_subject boolean DEFAULT false NOT NULL,
+    dspace_store boolean DEFAULT false NOT NULL,
+    mimetype character varying(100) DEFAULT 'text/plain'::character varying NOT NULL,
+    filename character varying(1024) DEFAULT 'output.txt'::character varying NOT NULL,
+    available_at_runtime boolean DEFAULT false NOT NULL
+);
+
+
+ALTER TABLE public.app_output OWNER TO uportal;
+
+--
+-- Name: app_seq_id; Type: SEQUENCE; Schema: public; Owner: uportal
+--
+
+CREATE SEQUENCE app_seq_id
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.app_seq_id OWNER TO uportal;
+
+--
+-- Name: foo; Type: TABLE; Schema: public; Owner: uportal; Tablespace: 
+--
+
+CREATE TABLE foo (
+    a integer
+);
+
+
+ALTER TABLE public.foo OWNER TO uportal;
+
+--
+-- Name: input_file; Type: TABLE; Schema: public; Owner: uportal; Tablespace: 
+--
+
+CREATE TABLE input_file (
+    job_id integer NOT NULL,
+    filename character varying(1024),
+    mimetype character varying(1024) DEFAULT 'text/plain'::character varying NOT NULL,
+    "index" integer NOT NULL
+);
+
+
+ALTER TABLE public.input_file OWNER TO uportal;
+
+--
+-- Name: job_list; Type: TABLE; Schema: public; Owner: uportal; Tablespace: 
+--
+
+CREATE TABLE job_list (
+    job_id integer DEFAULT nextval(('job_seq_id'::text)::regclass) NOT NULL,
+    app_id integer NOT NULL,
+    userid integer NOT NULL,
+    description character varying(2048) NOT NULL,
+    staging_dir character varying(1024) NOT NULL,
+    deleted boolean DEFAULT false NOT NULL,
+    status character varying(2) DEFAULT 'U'::character varying,
+    substatus character varying(1024),
+    submit_time timestamp without time zone DEFAULT ('now'::text)::timestamp(6) with time zone NOT NULL,
+    wall_time integer,
+    is_published boolean DEFAULT false,
+    dspace_mapfile character varying(65535),
+    project_id integer,
+    handle character varying(256),
+    tried_to_publish boolean DEFAULT false,
+    chempound_url character varying(256),
+    chempound_is_published boolean DEFAULT false,
+    figshare_is_published boolean DEFAULT false,
+    figshare_handle character varying(80)
+);
+
+
+ALTER TABLE public.job_list OWNER TO uportal;
+
+--
+-- Name: job_seq_id; Type: SEQUENCE; Schema: public; Owner: uportal
+--
+
+CREATE SEQUENCE job_seq_id
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.job_seq_id OWNER TO uportal;
+
+--
+-- Name: model_seq_id; Type: SEQUENCE; Schema: public; Owner: uportal
+--
+
+CREATE SEQUENCE model_seq_id
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.model_seq_id OWNER TO uportal;
+
+--
+-- Name: output_file; Type: TABLE; Schema: public; Owner: uportal; Tablespace: 
+--
+
+CREATE TABLE output_file (
+    job_id integer NOT NULL,
+    filename character varying(1024)
+);
+
+
+ALTER TABLE public.output_file OWNER TO uportal;
+
+--
+-- Name: pool_id_seq; Type: SEQUENCE; Schema: public; Owner: uportal
+--
+
+CREATE SEQUENCE pool_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.pool_id_seq OWNER TO uportal;
+
+--
+-- Name: pools; Type: TABLE; Schema: public; Owner: uportal; Tablespace: 
+--
+
+CREATE TABLE pools (
+    "owner" integer NOT NULL,
+    pool_id integer DEFAULT nextval(('pool_id_seq'::text)::regclass) NOT NULL,
+    remote_user character varying(16) NOT NULL,
+    remote_host character varying(100) NOT NULL,
+    script_path character varying(1024) DEFAULT '/'::character varying NOT NULL,
+    description character varying(100) NOT NULL,
+    public boolean DEFAULT false NOT NULL
+);
+
+
+ALTER TABLE public.pools OWNER TO uportal;
+
+--
+-- Name: preview_templates; Type: TABLE; Schema: public; Owner: uportal; Tablespace: 
+--
+
+CREATE TABLE preview_templates (
+    mimetype character varying(100) NOT NULL,
+    "template" character varying(100),
+    linebreak character varying(10) DEFAULT E'\012'::character varying
+);
+
+
+ALTER TABLE public.preview_templates OWNER TO uportal;
+
+--
+-- Name: profile; Type: TABLE; Schema: public; Owner: uportal; Tablespace: 
+--
+
+CREATE TABLE profile (
+    userid integer NOT NULL,
+    foafurl character varying(1024),
+    embargo integer DEFAULT 0,
+    figsharesecret character varying(80),
+    figsharekey character varying(80),
+    pub_figshare boolean DEFAULT false,
+    pub_chempound boolean DEFAULT false,
+    pub_dspace boolean DEFAULT true
+);
+
+
+ALTER TABLE public.profile OWNER TO uportal;
+
+--
+-- Name: project_seq_id; Type: SEQUENCE; Schema: public; Owner: uportal
+--
+
+CREATE SEQUENCE project_seq_id
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.project_seq_id OWNER TO uportal;
+
+--
+-- Name: projects; Type: TABLE; Schema: public; Owner: uportal; Tablespace: 
+--
+
+CREATE TABLE projects (
+    project_id integer DEFAULT nextval(('project_seq_id'::text)::regclass) NOT NULL,
+    userid integer NOT NULL,
+    description character varying(40) NOT NULL
+);
+
+
+ALTER TABLE public.projects OWNER TO uportal;
+
+--
+-- Name: user_id_seq_id; Type: SEQUENCE; Schema: public; Owner: uportal
+--
+
+CREATE SEQUENCE user_id_seq_id
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.user_id_seq_id OWNER TO uportal;
+
+--
+-- Name: users; Type: TABLE; Schema: public; Owner: uportal; Tablespace: 
+--
+
+CREATE TABLE users (
+    userid integer DEFAULT nextval(('user_id_seq_id'::text)::regclass) NOT NULL,
+    is_admin boolean DEFAULT false NOT NULL,
+    username character varying(1024),
+    figsharekey character varying(80),
+    figsharesecret character varying(80),
+    orcid character varying(80)
+);
+
+
+ALTER TABLE public.users OWNER TO uportal;
+
+--
+-- Name: acl_pkey; Type: CONSTRAINT; Schema: public; Owner: uportal; Tablespace: 
+--
+
+ALTER TABLE ONLY acl
+    ADD CONSTRAINT acl_pkey PRIMARY KEY (pool_id, user_id);
+
+
+--
+-- Name: app_input_pkey; Type: CONSTRAINT; Schema: public; Owner: uportal; Tablespace: 
+--
+
+ALTER TABLE ONLY app_input
+    ADD CONSTRAINT app_input_pkey PRIMARY KEY (app_id, "index");
+
+
+--
+-- Name: app_list_pkey; Type: CONSTRAINT; Schema: public; Owner: uportal; Tablespace: 
+--
+
+ALTER TABLE ONLY app_list
+    ADD CONSTRAINT app_list_pkey PRIMARY KEY (app_id);
+
+
+--
+-- Name: app_output_pkey; Type: CONSTRAINT; Schema: public; Owner: uportal; Tablespace: 
+--
+
+ALTER TABLE ONLY app_output
+    ADD CONSTRAINT app_output_pkey PRIMARY KEY (app_id, "index");
+
+
+--
+-- Name: input_file_pkey; Type: CONSTRAINT; Schema: public; Owner: uportal; Tablespace: 
+--
+
+ALTER TABLE ONLY input_file
+    ADD CONSTRAINT input_file_pkey PRIMARY KEY (job_id, "index");
+
+
+--
+-- Name: job_list_pkey; Type: CONSTRAINT; Schema: public; Owner: uportal; Tablespace: 
+--
+
+ALTER TABLE ONLY job_list
+    ADD CONSTRAINT job_list_pkey PRIMARY KEY (job_id);
+
+
+--
+-- Name: output_file_pkey; Type: CONSTRAINT; Schema: public; Owner: uportal; Tablespace: 
+--
+
+ALTER TABLE ONLY output_file
+    ADD CONSTRAINT output_file_pkey PRIMARY KEY (job_id);
+
+
+--
+-- Name: pools_pkey; Type: CONSTRAINT; Schema: public; Owner: uportal; Tablespace: 
+--
+
+ALTER TABLE ONLY pools
+    ADD CONSTRAINT pools_pkey PRIMARY KEY (pool_id);
+
+
+--
+-- Name: preview_templates_pkey; Type: CONSTRAINT; Schema: public; Owner: uportal; Tablespace: 
+--
+
+ALTER TABLE ONLY preview_templates
+    ADD CONSTRAINT preview_templates_pkey PRIMARY KEY (mimetype);
+
+
+--
+-- Name: profile_pkey; Type: CONSTRAINT; Schema: public; Owner: uportal; Tablespace: 
+--
+
+ALTER TABLE ONLY profile
+    ADD CONSTRAINT profile_pkey PRIMARY KEY (userid);
+
+
+--
+-- Name: projects_pkey; Type: CONSTRAINT; Schema: public; Owner: uportal; Tablespace: 
+--
+
+ALTER TABLE ONLY projects
+    ADD CONSTRAINT projects_pkey PRIMARY KEY (project_id);
+
+
+--
+-- Name: users_pkey; Type: CONSTRAINT; Schema: public; Owner: uportal; Tablespace: 
+--
+
+ALTER TABLE ONLY users
+    ADD CONSTRAINT users_pkey PRIMARY KEY (userid);
+
+
+--
+-- Name: $1; Type: FK CONSTRAINT; Schema: public; Owner: uportal
+--
+
+ALTER TABLE ONLY pools
+    ADD CONSTRAINT "$1" FOREIGN KEY ("owner") REFERENCES users(userid) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: $1; Type: FK CONSTRAINT; Schema: public; Owner: uportal
+--
+
+ALTER TABLE ONLY projects
+    ADD CONSTRAINT "$1" FOREIGN KEY (userid) REFERENCES users(userid) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: $1; Type: FK CONSTRAINT; Schema: public; Owner: uportal
+--
+
+ALTER TABLE ONLY app_list
+    ADD CONSTRAINT "$1" FOREIGN KEY (pool_id) REFERENCES pools(pool_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: $1; Type: FK CONSTRAINT; Schema: public; Owner: uportal
+--
+
+ALTER TABLE ONLY app_input
+    ADD CONSTRAINT "$1" FOREIGN KEY (app_id) REFERENCES app_list(app_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: $1; Type: FK CONSTRAINT; Schema: public; Owner: uportal
+--
+
+ALTER TABLE ONLY app_output
+    ADD CONSTRAINT "$1" FOREIGN KEY (app_id) REFERENCES app_list(app_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: $1; Type: FK CONSTRAINT; Schema: public; Owner: uportal
+--
+
+ALTER TABLE ONLY job_list
+    ADD CONSTRAINT "$1" FOREIGN KEY (app_id) REFERENCES app_list(app_id) ON UPDATE CASCADE;
+
+
+--
+-- Name: $1; Type: FK CONSTRAINT; Schema: public; Owner: uportal
+--
+
+ALTER TABLE ONLY output_file
+    ADD CONSTRAINT "$1" FOREIGN KEY (job_id) REFERENCES job_list(job_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: $1; Type: FK CONSTRAINT; Schema: public; Owner: uportal
+--
+
+ALTER TABLE ONLY input_file
+    ADD CONSTRAINT "$1" FOREIGN KEY (job_id) REFERENCES job_list(job_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: $1; Type: FK CONSTRAINT; Schema: public; Owner: uportal
+--
+
+ALTER TABLE ONLY acl
+    ADD CONSTRAINT "$1" FOREIGN KEY (pool_id) REFERENCES pools(pool_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: $1; Type: FK CONSTRAINT; Schema: public; Owner: uportal
+--
+
+ALTER TABLE ONLY profile
+    ADD CONSTRAINT "$1" FOREIGN KEY (userid) REFERENCES users(userid) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: $2; Type: FK CONSTRAINT; Schema: public; Owner: uportal
+--
+
+ALTER TABLE ONLY job_list
+    ADD CONSTRAINT "$2" FOREIGN KEY (userid) REFERENCES users(userid) ON UPDATE CASCADE;
+
+
+--
+-- Name: $2; Type: FK CONSTRAINT; Schema: public; Owner: uportal
+--
+
+ALTER TABLE ONLY acl
+    ADD CONSTRAINT "$2" FOREIGN KEY (user_id) REFERENCES users(userid) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: $3; Type: FK CONSTRAINT; Schema: public; Owner: uportal
+--
+
+ALTER TABLE ONLY job_list
+    ADD CONSTRAINT "$3" FOREIGN KEY (project_id) REFERENCES projects(project_id) ON UPDATE CASCADE;
+
+
+--
+-- Name: public; Type: ACL; Schema: -; Owner: postgres
+--
+
+REVOKE ALL ON SCHEMA public FROM PUBLIC;
+REVOKE ALL ON SCHEMA public FROM postgres;
+GRANT ALL ON SCHEMA public TO postgres;
+GRANT ALL ON SCHEMA public TO PUBLIC;
+
+
+--
+-- Name: job_list; Type: ACL; Schema: public; Owner: uportal
+--
+
+REVOKE ALL ON TABLE job_list FROM PUBLIC;
+REVOKE ALL ON TABLE job_list FROM uportal;
+GRANT ALL ON TABLE job_list TO uportal;
+
+
+--
+-- Name: users; Type: ACL; Schema: public; Owner: uportal
+--
+
+REVOKE ALL ON TABLE users FROM PUBLIC;
+REVOKE ALL ON TABLE users FROM uportal;
+GRANT ALL ON TABLE users TO uportal;
+
+
+--
+-- PostgreSQL database dump complete
+--
+
