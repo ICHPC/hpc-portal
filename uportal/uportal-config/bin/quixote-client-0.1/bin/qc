@@ -1,0 +1,38 @@
+#!/bin/sh
+
+if [ -z "$CPCLIENT_HOME" ] ; then
+  ## resolve links - $0 may be a link to Chempound Client's home
+  PRG="$0"
+
+  # need this for relative symlinks
+  while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+      PRG="$link"
+    else
+      PRG="`dirname "$PRG"`/$link"
+    fi
+  done
+
+  saveddir=`pwd`
+
+  CPCLIENT_HOME=`dirname "$PRG"`/..
+
+  # make it fully qualified
+  CPCLIENT_HOME=`cd "$CPCLIENT_HOME" && pwd`
+
+  cd "$saveddir"
+fi
+
+java \
+  $CPCLIENT_OPTS \
+  -classpath "$CPCLIENT_HOME/lib/*" \
+  -Dcpclient.home="$CPCLIENT_HOME" \
+  -Dlog4j.configuration=qc-log4j.properties \
+  uk.ac.cam.ch.wwmm.quixote.client.QuixoteClientCLI -R http://neon2.ch.ic.ac.uk:8090/content/CompChem deposit-gaussian $1  2> /tmp/q.err | grep "Created entry" | sed "s/Created entry://" | sed "s/neon2/chempound/"
+
+
+#\
+#  2> /tmp/qc.err | grep "Created entry" | sed "s/Created entry://" | sed "s/neon2/chempound/" 
+ 

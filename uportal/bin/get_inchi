@@ -1,0 +1,11 @@
+#!/bin/sh
+
+(
+for T in $*; do
+	/usr/local/bin/babel -i mol  $T -o inchi - 
+	/usr/local/bin/babel -i cdx  $T -o inchi - 
+	/usr/local/bin/babel -i sdf  $T -o inchi - 
+	/usr/local/bin/babel -i pdb  $T -o inchi - 
+	/usr/local/bin/babel -i g03  $T -o inchi - 
+done
+) 2>/dev/null  | grep -i inchi | sort | uniq

@@ -1,0 +1,20 @@
+{include file="header.tpl"}
+
+		<!-- main Col start-->
+		<div id="hmMain">
+
+			<h1>Welcome to the ICT Utility Computing Service</h1>
+
+
+<p> Welcome to the ICT Utility Computing Service. You can use this web portal to run instances of packaged applications. 
+
+<p>Create a new job by selecting <a href="?action=newjob">new job</a> from the menu to the left. Individual jobs may be associated with a particular <a href="?action=projects">project</a>. To see all jobs, past and present, select <a href="?action=joblist">job list</a>.
+
+<p>For for information, contact <a href="mailto:m.harvey@ic.ac.uk?subject=Utility Computing">Matt Harvey</a>.
+
+
+
+
+		</div>
+
+{include file="footer.tpl"}

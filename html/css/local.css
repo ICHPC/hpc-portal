@@ -1,0 +1,33 @@
+table.MYTABLE {
+	border-width: 1px 1px 1px 1px;
+	border-spacing: 0px;
+	border-style: outset outset outset outset;
+	border-color: gray gray gray gray;
+	border-collapse: collapse;
+	background-color: white;
+}
+
+table.MYTABLE th a {
+	color: white;
+}
+table.MYTABLE td a {
+	color: #00538D;
+}
+
+table.MYTABLE th {
+	border-width: 1px 1px 1px 1px;
+	padding: 1px 1px 1px 1px;
+	border-style: inset inset inset inset;
+	border-color: gray gray gray gray;
+	background-color: #00538D;
+	color: white;
+	-moz-border-radius: 0px 0px 0px 0px;
+}
+table.MYTABLE td {
+	border-width: 1px 1px 1px 1px;
+	padding: 1px 1px 1px 1px;
+	border-style: inset inset inset inset;
+	border-color: gray gray gray gray;
+	background-color: white;
+	-moz-border-radius: 0px 0px 0px 0px;
+}

@@ -1,0 +1,19 @@
+/* */
+
+@import "http://www.imperial.ac.uk/master/coreSlave.css" ;
+
+
+
+.spacer {
+	clear: both;
+
+}
+
+  .clearall {
+	clear: both;
+	overflow: hidden;
+	float: none;
+	width: 100%;
+	height: 1px;
+
+}

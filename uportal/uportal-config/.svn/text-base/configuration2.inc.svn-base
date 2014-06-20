@@ -1,0 +1,37 @@
+<?
+$UP_config['ldap_host'] = 'unixldap.cc.ic.ac.uk';
+$UP_config['ldap_port'] = NULL;
+$UP_config['ldap_basedn'] = array('ou=chemistry,dc=ic,dc=ac,dc=uk', 'ou=hpc,dc=ic,dc=ac,dc=uk' );
+
+
+$UP_config['conn_string'] =  "host=unixblade7.cc.ic.ac.uk port=5432 dbname=uportal2 user=uportal password=sLza810";
+
+$UP_config['ssh']        =  "/usr/bin/ssh -v ";
+$UP_config['ssh_key']    = "-i ";
+$UP_config['scp']        = "/usr/bin/scp ";
+
+$UP_config['ssh_keydir'] = '/var/www/scanweb.cc.ic.ac.uk/uportal-config/keys/';
+
+$UP_config['ssh-keygen'] = "/usr/bin/ssh-keygen";
+
+
+$UP_config['cat']           = "/bin/cat";
+
+#$UP_config['remote_uportal_dir'] ='bin/';
+
+$UP_config['make_staging_directory'] = 'make_staging_directory';
+$UP_config['make_input_tar'] = 'make_tar';
+$UP_config['delete_job']    =  'delete_job';
+$UP_config['run_job']       =  'run_app';
+$UP_config['job_status']    =  'job_state';
+$UP_config['filetest']	    =  'filetest';
+$UP_config['app_config']    =  'app_configuration';
+$UP_config['pool_status']   =  'pool_status';
+
+#$UP_config['dspace_insert'] = "/dspace/bin/dsrun org.dspace.app.itemimport.ItemImport -w -a -e m.harvey@ic.ac.uk ";
+$UP_config['dspace_url']     = "http://scanweb.cc.ic.ac.uk:8080/dspace/handle/";
+$UP_config['dspace_importer']= "/var/www/scanweb.cc.ic.ac.uk/uportal-config/bin/lniimport";
+
+#$UP_config['condor_status'] = "/var/condor/condor_status";
+
+?>

@@ -1,0 +1,43 @@
+CAPTION.MYTABLE
+  {
+     background-color:black;
+     color:white;
+     border-style:solid;
+     border-width:0px;
+     border-color:black;
+  }
+
+  TABLE.MYTABLE
+  { 
+     font-family:arial;
+     font-size:10pt;
+     background-color:white;
+     border-color:#808080;
+     border-width:1px;
+  }
+
+  TH.MYTABLE
+  {
+     font-size:10pt;
+     background-color:#00538D;
+     color:white;
+  }
+	A.MYTABLE
+	{
+		color: red;
+		text-decoration: none ;
+	}
+
+
+  TR.MYTABLE
+  { 
+  }
+
+  TD.MYTABLE
+  {  
+     font-size:10pt;
+     background-color:#ffffff;
+     color:black;
+     border-width:0px;
+     text-align:center;
+  }

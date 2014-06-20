@@ -1,0 +1,23 @@
+#!/bin/sh
+
+export JAVA_HOME=/opt/jdk1.5.0_06/
+export PATH=${PATH}:${JAVA_HOME}/bin
+
+export LNI_JAR=/var/www/uportal/uportal-config/classes/lniclient-bin-0.1.jar
+
+SUB=`${JAVA_HOME}/bin/java  -Xmx1024M -jar ${LNI_JAR} \
+	-U https://155.198.5.17:8443/dspace-lni/  \
+	-c 10042/28 \
+	-m application/zip \
+	-t METS \
+	-u m.j.harvey@imperial.ac.uk \
+	-p xnjj123 $1 | awk '{print $1}' | sed "s/.*dso_//g" | sed "s/%24/\//g"` 
+
+echo $SUB
+
+#| awk {'print $1;'} |  sed 's/^.*to/to/g' `
+#
+#if [ "$SUB" != "" ]; then
+#	echo "10042/$SUB"
+#fi
+

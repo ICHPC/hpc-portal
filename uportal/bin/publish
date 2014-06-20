@@ -1,0 +1,200 @@
+#!/usr/local/bin/python
+from optparse import OptionParser
+import requests
+import os
+from oauth_hook import OAuthHook
+import json
+from os.path import basename
+from os.path import exists
+import os
+import sys
+
+def get_credentials( configfile ):
+ print("This program needs to be authorised to access your Figshare account.")
+ print("Please create a new Application from the account management page" )
+ print("and enter the access codes below:\n" )
+ consumer_key=""
+ consumer_secret=""
+ token_key=""
+ token_secret=""
+
+ while(len(consumer_key)!=22):
+  print "Consumer token      : ", 
+  consumer_key = sys.stdin.readline().strip()
+
+ while (len(consumer_secret)!=22):
+  print "Consumer secret     : ", 
+  consumer_secret = sys.stdin.readline().strip()
+
+ while (len(token_key)!=66):
+  print "Access token        : ", 
+  token_key = sys.stdin.readline().strip()
+
+ while(len(token_secret)!=22):
+  print "Access token secret : ",  
+  token_secret = sys.stdin.readline().strip()
+
+ f=open( configfile, 'w' )
+ f.write( consumer_key )
+ f.write( consumer_secret )
+ f.write( token_key )
+ f.write( token_secret )
+ f.close()
+ exit(0)
+	
+
+baseurl = "http://api.figshare.com/v1/my_data/articles"
+
+notice="ACEMD Figshare publisher\n (c) 2012 Acellera Ltd"
+
+parser = OptionParser( description=notice)
+parser.add_option( "-f", dest="file" , action="append", help="File(s) to upload" )
+parser.add_option( "-t", dest="title", help="Title of entry" )
+parser.add_option( "-d", dest="description", help="Description of entry" )
+parser.add_option( "-g", dest="tag", action="append", help="Tag(s) to add to entry" )
+parser.add_option( "-u", dest="url", action="append", help="URL(s) to add to entry" )
+parser.add_option( "--public", dest="public", action="store_true", help="Make entry public (irrevocable)" )
+parser.add_option( "--forget", dest="forget", action="store_true", help="Forget Figshare access codes" );
+
+
+(options, args) = parser.parse_args()
+
+
+if( not options.tag  ):
+	options.tag = []
+if( not options.url  ):
+	options.url = []
+
+
+options.tag.append( "ACEMD"  )
+options.url.append( "http://dx.doi.org/10.1021/ct9000685"  )
+
+options.category =  [ 1 ]
+
+
+#if ( options.consumerkey )  :
+#	OAuthHook.consumer_key = options.consumerkey
+#
+#if ( options.consumersecret ) : 
+#	OAuthHook.consumer_secret = options.consumersecret
+
+home=os.getenv("HOME")
+
+consumer_key=""
+consumer_secret=""
+token_key=""
+token_secret=""
+
+try:
+ os.mkdir( home + "/.acellera" )
+except:
+ pass
+
+configfile=home + "/.acellera/figshare.credentials"
+
+if options.forget:
+ os.unlink(configfile)
+
+while ( not exists( configfile ) ):
+ get_credentials( configfile )
+
+f=open( configfile, 'r' )
+OAuthHook.consumer_key=f.readline()
+OAuthHook.consumer_secret=f.readline()
+token_key=f.readline()
+token_secret=f.readline()
+f.close()
+
+
+OAuthHook.consumer_key=options.consumerkey="AV8kElE0WNVGTVUqBFtS9Q"
+OAuthHook.consumer_secret=options.consumersecret="YQYZI19BiE5jOTc8NOnQXg"
+token_key="fxXBK50BtJB2mcRYqxOuVgXJSY6Yt1QjsuB00eWRT8XgfxXXK50BtJB2mcRYqxOuVg"
+token_secret="StfAUMyg5hmqpuJEb6BAtw"
+
+if( not options.file ) :
+ print "At least one file must be specified"
+ exit(1)
+
+for filename in options.file:
+		if (False == exists( filename )) :
+			exit( "File "+filename+" does not exist" )
+
+
+
+
+if (  not options.title or  not options.description ) :
+	exit( "Title and Description must be specified")
+
+oauth_hook = OAuthHook( token_key, token_secret, header_auth=True)
+
+client = requests.session(hooks={'pre_request': oauth_hook})
+
+body = {'title':options.title, 'description':options.description,'defined_type':'fileset'}
+headers = {'content-type':'application/json'}
+
+response = client.post( baseurl ,
+                        data=json.dumps(body), headers=headers)
+
+
+results = json.loads(response.content)
+#print results
+
+if ( not results.has_key('article_id' ) ):
+  exit( "Article creation failed")
+
+
+article = results['article_id']
+
+
+if( options.file ) :
+	for filename in options.file: 
+		print "Uploading file " + filename
+
+		pubfilename=basename(filename)
+		files = { 'filedata':( pubfilename , open( filename, 'rb')) }
+		response = client.put( baseurl + '/'+str(article)+'/files', files=files)
+		results = json.loads(response.content)
+ 
+	#print results
+
+if( options.url )  :
+	for url in options.url:
+		#print url
+		body = {'link':url }
+		headers = {'content-type':'application/json'}
+
+		response = client.put( baseurl + '/'+str(article)+'/links',
+                        data=json.dumps(body), headers=headers)
+		results = json.loads(response.content)
+
+
+if( options.tag ):
+	for tag in options.tag:
+		#print tag
+
+		body = {'tag_name':tag }
+		headers = {'content-type':'application/json'}
+		response = client.put( baseurl + '/'+str(article)+'/tags', data=json.dumps(body), headers=headers)
+		results = json.loads(response.content)
+
+
+
+if (options.category) :
+	for category in options.category:
+	#print tag
+
+		body = {'category_id':category }
+		headers = {'content-type':'application/json'}
+		response = client.put( baseurl + '/'+str(article)+'/categories', data=json.dumps(body), headers=headers)
+		results = json.loads(response.content)
+
+if (options.public ):
+  response = client.post( baseurl + '/'+str(article)+'/action/make_public')
+
+print "doi://10.6084/m9.figshare." + str(article)
+
+
+
+exit(0)
+
+
