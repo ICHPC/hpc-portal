@@ -150,9 +150,9 @@ print "No FIGSHARE credentials\n"; # [$fskey] [$fssecret]";
 #		print $cmd;
 #		print "<br>";
 #		print_r( $output );
-		foreach( $output as $fuckme ) {
-			if( strstr( $fuckme, "DOI:" ) != FALSE ) {
-				$url = str_replace( "DOI: ", "", $fuckme );
+		foreach( $output as $temp ) {
+			if( strstr( $temp, "DOI:" ) != FALSE ) {
+				$url = str_replace( "DOI: ", "", $temp );
 #				printf("<a href='http://dx.doi.org/$url'>$url</a>");
 #				Add to the job list
 				pg_prepare( $dbconn, "fmp1", "UPDATE job_list SET figshare_handle = $1 WHERE job_id = $2"); 
@@ -333,11 +333,11 @@ print "No FIGSHARE credentials [$fskey] [$fssecret]";
 	$i=0;
 	$files_for_processing = "/var/www/uportal/bin/get_inchi ";
 print_r( $_FILES );
-	foreach( $_FILES as $fuckme ) {
+	foreach( $_FILES as $temp ) {
 		 
-		 $tmpfile = $fuckme[ 'tmp_name' ];
+		 $tmpfile = $temp[ 'tmp_name' ];
 		if( file_exists( $tmpfile ) ) {
-			 $file    = $fuckme[ 'name' ];
+			 $file    = $temp[ 'name' ];
 			$file = preg_replace( "/\//", "", $file );
 			$file = preg_replace( "/\s/", "", $file );
 			$file = preg_replace( "/\.\./", "", $file );
@@ -351,8 +351,8 @@ print_r( $_FILES );
 
         exec( $files_for_processing,  $foo );
 
-	foreach( $foo as $fuckme ) {
-		$cmd = $cmd . " -g " . escapeshellarg( $fuckme ) ;
+	foreach( $foo as $temp ) {
+		$cmd = $cmd . " -g " . escapeshellarg( $temp ) ;
 	}
 	
 	
@@ -382,9 +382,9 @@ print_r( $_FILES );
 #	print_r( $bar );
 #	echo "-->";
 
-	foreach( $bar as $fuckme ) {
-		if( strstr( $fuckme, "DOI:" ) != FALSE ) {
-		$url = str_replace( "DOI: ", "", $fuckme );
+	foreach( $bar as $temp ) {
+		if( strstr( $temp, "DOI:" ) != FALSE ) {
+		$url = str_replace( "DOI: ", "", $temp );
 
 		printf("<a href='http://dx.doi.org/$url'>$url</a>");
 #		Add to the job list
