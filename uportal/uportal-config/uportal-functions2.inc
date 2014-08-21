@@ -3,8 +3,75 @@
 require_once('domxml-php4-to-php5.php');
 
 require 'configuration2.inc';
+require 'auth-functions.inc';
 
 $dbconn = pg_connect($UP_config['conn_string']);
+
+# Go through all methods in $UP_config['auth_methods']
+# attempting to authenticate with each one.
+#
+# If $UP_config['auth_type'] is strict then all methods must succeed,
+# if it's permissive then any must succeed.
+#
+# The user's fullname is taken from the first successful method.
+# A method cannot return an empty name as this is detected as an auth failure.
+#
+# Returns the fullname if authentication was successful, NULL otherwise.
+function authenticate($user, $password)
+{
+    global $UP_config;
+    $methods = array_map('trim',explode(',',$UP_config['auth_methods']));
+    switch (trim($UP_config['auth_type']))
+    {
+        case 'permissive':
+            $permissive = true;
+            $strict = false;
+        break;
+
+        case 'strict':
+            $permissive = false;
+            $strict = true;
+        break;
+
+        #SJC FIXME
+        default:
+        die ("oops\n");
+        break;
+    }
+
+    $authed = false;
+    $denied = false;
+    $gecos = NULL;
+    foreach ($methods as $m)
+    {
+        $a = false;
+        switch ($m)
+        {
+            case 'file':
+            $gc = file_authenticate($user, $password);
+            break;
+
+            case 'ldap':
+            $gc = ldap_authenticate($user, $password);
+            print "doing ldap\n";
+            break;
+
+            #SJC FIXME
+            default:
+            die ("oops\n");
+            break;
+        }
+        if (! empty($gc))
+        {
+            if (empty($gecos)) $gecos = $gc;
+            $a = true;
+        }
+        $authed = $a || $authed;
+        $denied = (!$a) || $denied;
+    }
+    if ( ($strict && (! $denied)) || ($permissive && $authed)) return $gecos;
+    return NULL;
+}
 
 function get_job_project( $jobid ) {
 	global $dbconn;
@@ -264,27 +331,6 @@ function is_admin( $user ) {
 	
 }
 
-
-function ldap_authenticate( $user, $password ) {
-
-		  global $UP_config;
-			for( $i =0; $i< count(  $UP_config['ldap_basedn'] ); $i++ ) {
-        $ds=@ldap_connect($UP_config['ldap_host'],$UP_config['ldap_port']);
-        $r = @ldap_search( $ds, $UP_config['ldap_basedn'][$i], 'uid=' . $user );
-#print "<P>Trying ".$UP_config['ldap_basedn'][$i];
-        if ($r) {
-            $result = @ldap_get_entries( $ds, $r);
-
-            if ($result[0]) {
-                if (@ldap_bind( $ds, $result[0]['dn'], $password) ) {
-						return  ($result[0]['gecos'][0] );
-                }
-            }
-        }
-			}
-    
-    return NULL;
-}
 
 function check_user_registration(  $user ) {
 	global $dbconn;

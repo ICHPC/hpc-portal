@@ -43,7 +43,7 @@ switch( $action ) {
 
 	case 'login':
 		// TODO: validate
-		$gecos = ldap_authenticate( $_REQUEST['username'], $_REQUEST['password']  );
+		$gecos = authenticate( $_REQUEST['username'], $_REQUEST['password']  );
 
 		if( empty ( $gecos ) ) {
 			$smarty->assign('error', "Bad credentials");

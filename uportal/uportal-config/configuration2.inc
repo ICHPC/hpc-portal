@@ -1,10 +1,21 @@
 <?
+
+# Show all errors
+ini_set('error_reporting', E_ALL);
+# Display all errors in browsers
+ini_set('display_errors', 1);
+# Send errors to web error log
+ini_set('log_errors', 1);
+
 $UP_config['ldap_host'] = 'unixldap.cc.ic.ac.uk';
 $UP_config['ldap_port'] = NULL;
 $UP_config['ldap_basedn'] = array('ou=chemistry,dc=ic,dc=ac,dc=uk', 'ou=hpc,dc=ic,dc=ac,dc=uk' );
 
+$UP_config['file_location'] = '/home/simon/hpc-portal/uportal/uportal-config/password.txt';
+$UP_config['auth_methods'] = 'file';
+$UP_config['auth_type'] = 'strict';
 
-$UP_config['conn_string'] =  "host=127.0.0.1 port=5432 dbname=uportal2 user=uportal password=sLza810";
+$UP_config['conn_string'] =  "host=127.0.0.1 port=5432 dbname=uportal user=uportal password=letmein";
 
 
 $UP_config['ssh']        =  "/usr/bin/ssh -oConnectTimeout=10 ";
