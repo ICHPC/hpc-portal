@@ -16,6 +16,11 @@ $UP_config['auth_methods'] = 'file';
 $UP_config['auth_type'] = 'strict';
 
 $UP_config['conn_string'] =  "host=127.0.0.1 port=5432 dbname=uportal user=uportal password=letmein";
+$UP_config['db_dbname'] =  'uportal';
+$UP_config['db_port'] =  '5432';
+$UP_config['db_host'] =  '127.0.0.1';
+$UP_config['db_user'] = 'uportal';
+$UP_config['db_password'] = 'letmein';
 
 
 $UP_config['ssh']        =  "/usr/bin/ssh -oConnectTimeout=10 ";

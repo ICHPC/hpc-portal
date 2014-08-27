@@ -2,11 +2,11 @@
 
 require_once('domxml-php4-to-php5.php');
 
-require 'configuration2.inc';
-require 'auth-functions.inc';
+require_once 'configuration2.inc';
+require_once 'auth-functions.inc';
+require_once 'db-functions.inc';
 
-$dbconn = pg_connect($UP_config['conn_string']);
-
+function authenticate($user, $password)
 # Go through all methods in $UP_config['auth_methods']
 # attempting to authenticate with each one.
 #
@@ -17,7 +17,6 @@ $dbconn = pg_connect($UP_config['conn_string']);
 # A method cannot return an empty name as this is detected as an auth failure.
 #
 # Returns the fullname if authentication was successful, NULL otherwise.
-function authenticate($user, $password)
 {
     global $UP_config;
     $methods = array_map('trim',explode(',',$UP_config['auth_methods']));
@@ -74,24 +73,21 @@ function authenticate($user, $password)
 }
 
 function get_job_project( $jobid ) {
-	global $dbconn;
-	$query="SELECT project_id FROM job_list WHERE job_id = ". sanify( $jobid );
-	$result= pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+	$query="SELECT project_id FROM job_list WHERE job_id = ?";
+    $j = sanify( $jobid );
+	$arr= db_query($query, array($j));
 	return $arr['project_id'];
 }
 
 
 function get_job_owner( $jobid ) {
-	global $dbconn;
-	$query="SELECT userid FROM job_list WHERE job_id = ". sanify( $jobid );
-	$result= pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+	$query="SELECT userid FROM job_list WHERE job_id = ?";
+    $j = sanify( $jobid );
+	$arr= db_query($query, array($j));
 	return $arr['userid'];
 }
 
 function get_job_project_name( $jobid ) {
-	global $dbconn;
 	$uid = get_job_owner( $jobid );
 	$pid = get_job_project( $jobid );
 	return get_project_name( $uid, $pid );
@@ -99,200 +95,206 @@ function get_job_project_name( $jobid ) {
 }
 
 function get_next_job_id() {
-	global $dbconn;
 	$query="SELECT nextval('job_seQ_id')";
-	$result  = pg_query( $dbconn, $query );
-
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+	$arr= db_query($query, array());
 	return $arr['nextval'];
 
 }
 
 function new_get_job_list( $user, $order, $orderdir=0, $project_id=-1, $limit=10, $offset=0, $filter="" ) {
-	global $dbconn;
 	$user =sanify( $user );
 	$uid = get_uid( $user );
+	$uid = sanify ( $uid );
 
 	$limit = (int) sanify($limit);
 	$offset= (int) sanify($offset);
 	$filter = sanify($filter);
+    $values = array($uid);
 
 	$statidx = array ('I' => 'Pending', 'R' => 'Running', 'C' => 'Finished', 'X' => 'Deleted', 'U'=>'Pending', 'H' => 'Paused', '?' => 'Not Queued', '!' => 'Failed' );
 
 	$orderby = array ( 'job_id' , 'a.app_id' , 'submit_time', 'wall_time',  'status', 'is_published' );
 	
-
-	if( $orderdir==0 ) { $orderdirstr='ASC';$otherdir=1; }
-	else { $orderdirstr='DESC';  $otherdir=0;  };
-	
-	if( !empty($order)  && $order >=0 && $order < count($orderby ) ) { $orderbystr = $orderby[$order]; }
-	else { $orderbystr = $orderby[0]; }
-
-	$uid = sanify ( $uid );
+	$query = "SELECT a.*, b.app_id, b.app_name FROM job_list a, app_list b WHERE userid = ? AND deleted=false AND a.app_id = b.app_id";
 
 	if ( $project_id > -1 ) { 
-		$projectclause = "AND project_id = ". (int) sanify($project_id);
-	}
-	else {		
-		$projectclause="";
+		#$projectclause = "AND project_id = ?". (int) sanify($project_id);
+		$query .= " AND project_id = ?";
+        $values[] = (int) sanify($project_id);
 	}
 
+    $query .= " ORDER BY ? ";
+	if( !empty($order) && $order >=0 && $order < count($orderby) )
+    {
+        #$orderbystr = $orderby[$order];
+        $values[] = $orderby[$order];
+    } else {
+        $values[] = $orderby[0];
+    }
+	if( $orderdir==0 )
+    {
+        $query .=' ASC';
+        $otherdir=1;
+    } else {
+        $query .=' DESC';
+        $otherdir=0;
+    }
+
+    # SJC eh?
 	$filter = str_replace( "*", "%", $filter );
 	$filter = str_replace( "?", "%", $filter );
 	if( $filter != "" ) {
-		$filterclause = " AND description ILIKE '%" . $filter ."%'";
-	}
-	else {
-		$filterclause = "";
+		#$query .= " AND description ILIKE '%" . $filter ."%'";
+		$query .= " AND description ILIKE ?";
+        $values[] = "%$filter%";
 	}
 
-	$query = "SELECT a.*, b.app_id, b.app_name FROM job_list a, app_list b WHERE userid = " . $uid . " AND deleted=false and a.app_id = b.app_id " . $projectclause . " " . $filterclause ." ORDER BY ".$orderbystr. " ".  $orderdirstr . " LIMIT $limit OFFSET $offset";
+    $query .= " LIMIT ?";
+    $values[] = $limit;
+    $query .= " OFFSET ?";
+    $values[] = $offset;
+
 
 #echo "<!-- $query -->";
 
-	$result  = pg_query( $dbconn, $query );
-
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
-
 	$list = array();
+	$allarr  = db_query_all( $query, $values );
 
-	if( $arr != NULL ) {
-
-
+	if( !empty($allarr) ) {
 //echo $query;
 
-	while( $arr != NULL ) {
+        #while( $arr != NULL ) {
+        foreach ($allarr as $arr) {
 
-		 $job_array=array();
+            $job_array=array();
 
-		$is_complete=0;
+            $is_complete=0;
 
-                # Get job status, updating from server if necessary
-		$jid =  $arr[ 'job_id' ];
+                    # Get job status, updating from server if necessary
+            $jid =  $arr[ 'job_id' ];
 
-		$job_array['jid'] =$jid ;
+            $job_array['jid'] =$jid ;
 
-		$stat = get_job_status( $dbconn, $arr['staging_dir'], $jid , $user );
+            $stat = get_job_status( $arr['staging_dir'], $jid , $user );
 
-	
-
-
-		$job_array[ 'app_name' ]= $arr['app_name'] ;
-		$job_array[ 'description'] = $arr['description'] ;
+        
 
 
-			$time_submit  = $arr['submit_time'];
-
-			# Remove the decimal at the end of the time string
-
-			$time_submit = preg_replace( "/\..*$/", "", $time_submit );
-
-		$job_array['submit_time'] = $time_submit ;
+            $job_array[ 'app_name' ]= $arr['app_name'] ;
+            $job_array[ 'description'] = $arr['description'] ;
 
 
-			$wall_time  = $arr['wall_time'];
-		  if( $wall_time == -1 ) {
-				$wt = "Not reported";
-			}
-			else if( $wall_time <1 ) {
-				$wt = "--";
-			}
-			else {
-				$hr = (int)($wall_time/3600);
-				$min = (int) (($wall_time - ($hr)*3600 )/60);
-				$sec = $wall_time - $hr*3600 - $min*60;
-			   $wt = $hr .":".$min.":".$sec;
-			}
-	
-			$job_array['wall_time'] = $wt;
+            $time_submit  = $arr['submit_time'];
 
-			$job_array['status'] = $statidx[$stat[0]] ;
+            # Remove the decimal at the end of the time string
+
+            $time_submit = preg_replace( "/\..*$/", "", $time_submit );
+
+            $job_array['submit_time'] = $time_submit ;
 
 
-			$job_array['input_files'] = list_input_files( $dbconn, $jid, $arr['app_id'] ) ;
+            $wall_time  = $arr['wall_time'];
+            if( $wall_time == -1 ) {
+                $wt = "Not reported";
+            }
+            else if( $wall_time <1 ) {
+                $wt = "--";
+            }
+            else {
+                $hr = (int)($wall_time/3600);
+                $min = (int) (($wall_time - ($hr)*3600 )/60);
+                $sec = $wall_time - $hr*3600 - $min*60;
+               $wt = $hr .":".$min.":".$sec;
+            }
+    
+            $job_array['wall_time'] = $wt;
 
-			$input_name    = array();
-			$input_selected= array();
-			$input_value   = array();
-
-			$idx=0;
-			foreach(  $job_array['input_files'] as $K => $T) {
-				$input_name[] = $T;
-				$input_value[] = $K;
-				$idx++;
-				if( $idx==0) { $input_selected[]=1; } else {$input_selected[]=0; }
-			}
-			$job_array[ 'input_name'] = $input_name;
-			$job_array[ 'input_selected'] = $input_selected;
-			$job_array[ 'input_values'] = $input_value;
-
-			if( $stat[0] == 'C' ) {
-				$job_array[ 'output_files']= list_output_files( $dbconn, $jid, $arr['app_id'] , false ) ;
-				$is_complete=1;
-			}
-			else if ($stat[0] == 'R' ) {
-				$job_array[ 'output_files'] = list_output_files( $dbconn, $jid, $arr['app_id'] , true )  ;
-			}
-			else {
-				$job_array[ 'output_files' ] = array() ;
-			}
-
-			$idx=0;
-
-			$output_name=array();
-			$output_value=array();
-			$output_selected=array();
-			foreach(  $job_array['output_files'] as $K => $T) {
-				$output_name[] = $T;
-				$output_value[] = $K;
-				$idx++;
-				if( $idx==0) { $output_selected[]=1; } else {$output_selected[]=0; }
-			}
-			$job_array[ 'output_name'] = $output_name;
-			$job_array[ 'output_selected'] = $output_selected;
-			$job_array[ 'output_values'] = $output_value;
+            $job_array['status'] = $statidx[$stat[0]] ;
 
 
+            $job_array['input_files'] = list_input_files( $arr['app_id'] ) ;
+
+            $input_name    = array();
+            $input_selected= array();
+            $input_value   = array();
+
+            $idx=0;
+            foreach(  $job_array['input_files'] as $K => $T) {
+                $input_name[] = $T;
+                $input_value[] = $K;
+                $idx++;
+                if( $idx==0) { $input_selected[]=1; } else {$input_selected[]=0; }
+            }
+            $job_array[ 'input_name'] = $input_name;
+            $job_array[ 'input_selected'] = $input_selected;
+            $job_array[ 'input_values'] = $input_value;
+
+            if( $stat[0] == 'C' ) {
+                $job_array[ 'output_files']= list_output_files( $jid, $arr['app_id'] , false ) ;
+                $is_complete=1;
+            }
+            else if ($stat[0] == 'R' ) {
+                $job_array[ 'output_files'] = list_output_files( $jid, $arr['app_id'] , true )  ;
+            }
+            else {
+                $job_array[ 'output_files' ] = array() ;
+            }
+
+            $idx=0;
+
+            $output_name=array();
+            $output_value=array();
+            $output_selected=array();
+            foreach(  $job_array['output_files'] as $K => $T) {
+                $output_name[] = $T;
+                $output_value[] = $K;
+                $idx++;
+                if( $idx==0) { $output_selected[]=1; } else {$output_selected[]=0; }
+            }
+            $job_array[ 'output_name'] = $output_name;
+            $job_array[ 'output_selected'] = $output_selected;
+            $job_array[ 'output_values'] = $output_value;
 
 
-			# FIXME
-			if( $is_complete==1 ) {
+
+
+            # FIXME
+            if( $is_complete==1 ) {
 #printf("<!-- %d %d %d %d -->\n", $job_id, ($arr['app_id'] ==0) ,  (is_publishable(  $arr['app_id'], $jid )) ,  is_published(  $jid ) );
- 			if( ($arr['app_id'] ==0) ||  (is_publishable(  $arr['app_id'], $jid )) ) {
-					if( is_published(  $jid ) ) {
-						$job_array['publish'] = 'view';
-						if(( $arr['handle'] != "" )) { 
-							$job_array['handle']  = $arr[ 'handle' ];
-						}
-						$job_array['chempound']  = $arr[ 'chempound_url' ];
-						$job_array['figshare']  = $arr[ 'figshare_handle' ];
-						if( ! strstr( $arr['figshare_handle'], "figshare" ) ) {
-							$job_array['figshare_draft']  = "1";
-						}
-					}
-					else {
-						$job_array['publish'] = 'publish';
-					}
-			}
-			else {
-printf("<!-- here -->\n");
-					$job_array['publish'] = 'na';
-			}
-			}
-#			echo "</TD>";
+                if( ($arr['app_id'] ==0) ||  (is_publishable(  $arr['app_id'], $jid )) ) {
+                    if( is_published(  $jid ) ) {
+                        $job_array['publish'] = 'view';
+                        if(( $arr['handle'] != "" )) { 
+                            $job_array['handle']  = $arr[ 'handle' ];
+                        }
+                        $job_array['chempound']  = $arr[ 'chempound_url' ];
+                        $job_array['figshare']  = $arr[ 'figshare_handle' ];
+                        if( ! strstr( $arr['figshare_handle'], "figshare" ) ) {
+                            $job_array['figshare_draft']  = "1";
+                        }
+                    }
+                    else {
+                        $job_array['publish'] = 'publish';
+                    }
+                }
+                else {
+    printf("<!-- here -->\n");
+                    $job_array['publish'] = 'na';
+                }
+            }
+    #			echo "</TD>";
 
-#			echo "<TD>";
-#			echo '<A HREF="deleteJob.php?jid='.$arr['job_id'].'">Delete</a>';
-#			echo "</TD>";
+    #			echo "<TD>";
+    #			echo '<A HREF="deleteJob.php?jid='.$arr['job_id'].'">Delete</a>';
+    #			echo "</TD>";
 
-#		echo "</TR>\n";
+    #		echo "</TR>\n";
 
-		$list[] = $job_array;
-		
-		$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
-	}
+            $list[] = $job_array;
+            
+        }
 
-	return $list;
+        return $list;
 	}
 	else {
 		return null;
@@ -304,120 +306,127 @@ printf("<!-- here -->\n");
 }
 
 function is_required_input_file( $app_id , $idx ) {
-	global $dbconn;
-	$query="SELECT required from app_input where app_id= ". sanify($app_id) . " and index= ". sanify($idx );
+#	$query="SELECT required from app_input where app_id= ". sanify($app_id) . " and index= ". sanify($idx );
+	$query="SELECT required FROM app_input WHERE app_id= ? AND index = ?";
+    $s_app_id = sanify($app_id);
+    $s_idx = sanify($idx);
 
-	$result  = pg_query( $dbconn, $query );
+	$arr  = db_query( $query, array($s_app_id, $s_idx) );
 
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
-
-	if ($arr['required'] == 'f' ) { return false; }
-	else { return true; }
+	if ($arr['required'] == 'f' )
+    {
+        return false;
+    } else {
+        return true;
+    }
 
 }
 
 function is_admin( $user ) {
-	global $dbconn;
 
 	$user = sanify( $user );
-	$query = "SELECT is_admin FROM users WHERE username = '" . $user ."'";
+	$query = "SELECT is_admin FROM users WHERE username = ?";
 
-	$result  = pg_query( $dbconn, $query );
+	$arr  = db_query( $query, array($user) );
 
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
-
-	if ($arr['is_admin'] == 'f' ) { return false; }
-	else { return true; }
+	if ($arr['is_admin'] == 'f' )
+    {
+        return false;
+    } else {
+        return true;
+    }
 	
 }
 
 
 function check_user_registration(  $user ) {
-	global $dbconn;
 	
 	$user = sanify( $user );
 	
 	if( ! get_uid(  $user ) )  {
-		add_user( $dbconn, $user );
+		add_user( $user );
 		return 1;
 	}	
-	add_profile( $user );
 	return 0;
 }
 
-function add_user($dbconn,  $dn ) {
-	$query = "INSERT INTO users ( username ) values ( '" . sanify($dn) . "')";
+function add_user( $dn ) {
+    # SJC transaction?
+	$query = "INSERT INTO users ( username ) VALUES ( ? )";
+    # SJC check duplicate username?
 //echo $query;
-	$result = pg_query( $dbconn, $query );
+    $s_dn = sanify($dn);
+	$result = db_query( $query, array($s_dn) );
 
 
-	$query = "SELECT userid FROM users where username = '".sanify($dn)."'";
-	$result = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+	$query = "SELECT userid FROM users WHERE username = ?";
+	$arr = db_query( $query, array($s_dn) );
 	$userid = $arr['userid'];
 	
 	$query ="SELECT * from pools WHERE public = true";
-	$result = pg_query( $dbconn, $query );
+	$arr = db_query( $query, array() );
 
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
 	while( $arr!=NULL ) {
-		$q2 = "INSERT INTO acl ( user_id, pool_id ) VALUES ( ".$userid.", ". $arr['pool_id'] .")";
-		pg_query( $dbconn,  $q2 );
-		$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+		#$q2 = "INSERT INTO acl ( user_id, pool_id ) VALUES ( ".$userid.", ". $arr['pool_id'] .")";
+		$q2 = "INSERT INTO acl ( user_id, pool_id ) VALUES ( ?, ? )";
+		$result = db_query( $q2, array($userid, $arr['pool_id']) );
 	}
 
 	add_profile(  $userid );
 }
 
-function owns_job( $dbconn, $uid, $jid ) {
-	$query = "SELECT * FROM job_list WHERE userid = ".$uid." AND job_id = ".$jid;
-	$result = pg_query( $dconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
-	if( $arr != NULL ) { return true; }
-	else  { return false; }
+function owns_job( $uid, $jid ) {
+	#$query = "SELECT * FROM job_list WHERE userid = ".$uid." AND job_id = ".$jid;
+	$query = "SELECT * FROM job_list WHERE userid = ? AND job_id = ?";
+	$arr = db_query( $query, array($uid, $jid) );
+	if( $arr != NULL )
+    {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 
 function owns_project( $uid , $project_id ) {
-	global $dbconn;
 	$uid = (int) sanify( $uid );
 	$project_id = (int) sanify( $project_id );
 
-	$query = "SELECT * from projects where userid = ". $uid. " AND project_id = " .$project_id ;
+	#$query = "SELECT * from projects where userid = ". $uid. " AND project_id = " .$project_id ;
+	$query = "SELECT * FROM projects WHERE userid = ? AND project_id = ?";
 
-	$result = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+	$arr = db_query( $query, array($uid, $project_id) );
 	
 	return ( $arr != NULL );
 }
 
 function delete_project( $uid , $project_id ) {
-	global $dbconn;
 	$uid = (int) sanify( $uid );
 	$project_id = (int) sanify( $project_id );
 
-	$query = "delete from projects where userid = ". $uid. " AND project_id = " .$project_id ;
-	pg_query( $dbconn, $query );
+	#$query = "DELETE FROM projects WHERE userid = ". $uid. " AND project_id = " .$project_id ;
+	$query = "DELETE FROM projects WHERE userid = ? AND project_id = ?";
+	$arr = db_query( $query, array($uid, $project_id) );
 }
 	
 function add_project( $uid , $description ) {
-	global $dbconn;
 	$uid = sanify( $uid );
 	$description = sanify( $description );
 
-	$query = "insert into projects ( userid, description ) values ( ". $uid . " , '" . $description . "') ";
-	pg_query( $dbconn, $query );
+	#$query = "INSERT INTO projects ( userid, description ) VALUES ( ". $uid . " , '" . $description . "') ";
+	$query = "INSERT INTO projects ( userid, description ) VALUES ( ?, ? )";
+	$arr = db_query( $query, array($uid, $description) );
 }
 
 function get_project_by_jid( $jid ) {
-	global $dbconn;
-	$query = "SELECT project_id from job_list where job_id = ". (int)  sanify( $jid ) ;
+	#$query = "SELECT project_id from job_list where job_id = ". (int)  sanify( $jid ) ;
+	$query = "SELECT project_id FROM job_list WHERE job_id = ?";
 
-	$result = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
-   if($arr!=NULL ) {
-		return $arr['project_id'];
-   }
+    $s_jid = sanify($jid);
+	$arr = pg_query( $query, array($s_jid) );
+    if($arr!=NULL ) {
+        return $arr['project_id'];
+    }
 	else { 
 		return NULL;
 	}
@@ -425,37 +434,35 @@ function get_project_by_jid( $jid ) {
 }
 
 function get_project_name( $uid, $project_id ) {
-	global $dbconn;
+	#$query = "SELECT * from projects where userid = ". (int)  sanify( $uid ) . " AND project_id = " . (int) sanify( $project_id );
+	$query = "SELECT * FROM projects WHERE userid = ? AND project_id = ?";
 
-	$query = "SELECT * from projects where userid = ". (int)  sanify( $uid ) . " AND project_id = " . (int) sanify( $project_id );
+    $s_uid = sanify($uid);
+    $s_project_id = (int) sanify($project_id);
+	$arr = db_query( $query, array($s_uid, $s_project_id) );
 
-	$result = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
-
-   if($arr!=NULL ) {
+    if($arr!=NULL ) {
 		return $arr['description'];
-   }
+    }
 	else { 
 		return NULL;
 	}
 }
 	
 function get_projects( $uid ) {
-	global $dbconn;
+    $s_uid = sanify($uid);
+	#$query = "SELECT * FROM projects WHERE userid = ". sanify( $uid ) . "ORDER BY description ASC";
+	$query = "SELECT * FROM projects WHERE userid = ? ORDER BY description ASC";
+	$allarr = db_query_all( $query, array($s_uid) );
 
-	$query = "SELECT * from projects where userid = ". sanify( $uid ) . "ORDER BY description ASC";
-	$result = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
-
-   if($arr!=NULL ) {
-      while( $arr!=NULL ) {
-         $alist[] =  $arr['description'];
-         $vlist[] = $arr['project_id'];
-   
-         $arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
-      } 
-   }
-
+    $alist = array();
+    $vlist = array();
+    if (! empty($allarr) ) {
+        foreach ($allarr as $arr) {
+            $alist[] =  $arr['description'];
+            $vlist[] = $arr['project_id'];
+        } 
+    }
 	if( !empty ( $alist ) ) {
 		return  array( 'description' => $alist, 'project_id' => $vlist );
 	} else {
@@ -465,41 +472,42 @@ function get_projects( $uid ) {
 
 
 function app_list(   $pool_id ) {
-	global $dbconn;
 	$pool_id = sanify( $pool_id );
 
-	$query="select * from app_list WHERE pool_id = ". $pool_id . "AND CURRENT=true";
+	$query="SELECT * FROM app_list WHERE pool_id = ? AND current=true";
 
-	$result = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+	$allarr = db_query_all( $query, array($pool_id) );
 	
 	$alist = array();
 	$vlist = array();
-	if($arr!=NULL ) {
-		while( $arr!=NULL ) {
-			$alist[] =  $arr['app_name'];
-			$vlist[] = $arr['app_id'];
+    if (!empty($allarr)) {
+        foreach ($allarr as $arr) {
+            $alist[] =  $arr['app_name'];
+            $vlist[] = $arr['app_id'];
+        }
+    }
 
-			$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
-		}
+	if( !empty ( $alist ) ) {
+        return array( 'description' => $alist , 'app_id' => $vlist );
+	} else {
+		return array();
 	}
-	return array( 'description' => $alist , 'app_id' => $vlist );
 }
 
 function get_foaf (  $uid ) {
-	global $dbconn;
-	$query = 'SELECT foafurl FROM profile WHERE userid = '. sanify($uid);
-	$result  = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+    $uid = sanify($uid);
+
+	$query = 'SELECT foafurl FROM profile WHERE userid = ?';
+	$arr = db_query( $query, array($uid) );
 
 	return $arr[ 'foafurl' ];
 }
 
 function get_orcid (  $uid ) {
-	global $dbconn;
-	$query = 'SELECT orcid FROM users WHERE userid = '. sanify($uid);
-	$result  = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+    $uid = sanify($uid);
+
+	$query = 'SELECT orcid FROM users WHERE userid = ?';
+	$arr = db_query( $query, array($uid) );
 
 	return $arr[ 'orcid' ];
 }
@@ -507,74 +515,56 @@ function get_orcid (  $uid ) {
 
 
 function get_uid (  $uname ) {
-	global $dbconn;
-	$query = 'SELECT userid FROM users WHERE username ~* \'' . sanify($uname) .'\'' ;
-	$result  = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+    $uname = sanify($uname);
+    # SJC should be = not ~* ?
+	#$query = 'SELECT userid FROM users WHERE username ~* \'' . sanify($uname) .'\'' ;
+	$query = 'SELECT userid FROM users WHERE username = ?';
+	$arr  = db_query( $query, array($uname) );
 
 	return $arr[ 'userid' ];
 }
 
-function get_jobs( $dbconn, $uid ) {
-	$query = 'SELECT job_list FROM users WHERE userid = ' . sanify($uid). ' ORDER BY job_id DESC' ;
-	$result  = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
-	return $arr;
-
-}
-function list_input_files( $dbconn, $jid, $app_type ) {
-	$result = pg_query( $dbconn, 'SELECT * FROM app_input WHERE app_id = ' .$app_type . ' ORDER BY index ASC' );
-
-
-
-	$count=0;
-
-
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+function list_input_files( $app_type ) {
+    $query = 'SELECT * FROM app_input WHERE app_id = ? ORDER BY index ASC';
+	$allarr = db_query_all( $query, array($app_type) );
 
 	$file_list = array();
-
-	if( $arr!=NULL ) {	
-	while( $arr != NULL ) {
-		$file_list[] =   $arr['description'];
-		$count++;
-		$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
-	}
-	}
+    if (!empty($allarr)) {
+        foreach ($allarr as $arr) {
+            $file_list[] =   $arr['description'];
+        }
+    }
 
 	return $file_list;
 }
 
-function list_output_files( $dbconn, $jid , $app_type , $is_running) {
+function list_output_files( $app_type , $is_running) {
 	if( $is_running ) {
 
-		$result = pg_query( $dbconn, 'SELECT * FROM app_output WHERE app_id = ' .$app_type . ' AND available_at_runtime=true ORDER BY index ASC' );
+		#$result = pg_query( $dbconn, 'SELECT * FROM app_output WHERE app_id = ' .$app_type . ' AND available_at_runtime=true ORDER BY index ASC' );
+		$query = 'SELECT * FROM app_output WHERE app_id = ? AND available_at_runtime=true ORDER BY index ASC';
 	}
 	else {
-		$result = pg_query( $dbconn, 'SELECT * FROM app_output WHERE app_id = ' .$app_type . ' ORDER BY index ASC' );
+		#$result = pg_query( $dbconn, 'SELECT * FROM app_output WHERE app_id = ' .$app_type . ' ORDER BY index ASC' );
+		$query = 'SELECT * FROM app_output WHERE app_id = ? ORDER BY index ASC';
 	}
+
+    $allarr = db_query_all( $query, array($app_type) );
 
 	$file_list = array();
-
 	$count=0;
-
-
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
-
-	if( $arr!=NULL ) {	
-	while( $arr != NULL ) {
-		$file_list[$count] = $arr['description'];			
-
-		$count++;
-		$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
-	}
+    if (! empty($allarr)) {
+        foreach ($allarr as $arr) {
+            $file_list[$count] = $arr['description'];			
+            $count++;
+        }
+    }
 	
-	if( $count!=0 ) {
+	if( $count != 0 ) {
 		$file_list[-1] = 'Tarball';
 
 	}
 
-	}
 
 	return $file_list;
 }
@@ -614,14 +604,13 @@ $replace = array ('',
 return $text;
 }
 
-function make_key_name2( $pool_id ) {
-	global $dbconn;
+function make_key_name_from_pool( $pool_id ) {
 	global $UP_config;
+    $pool_id = sanify($pool_id);
 
-	$query = "SELECT * from pools WHERE pool_id = " .$pool_id ;
+	$query = "SELECT * from pools WHERE pool_id = ?";
 
-	$result = pg_query( $dbconn, $query );
-	$arr    = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+	$arr = db_query( $query, array($pool_id) );
 
 	return  ( $UP_config['ssh_keydir']. '/'. $arr['pool_id'].'@'. $arr['remote_user'] . '@' . $arr['remote_host'] . '.id_rsa' );
 
@@ -629,26 +618,19 @@ function make_key_name2( $pool_id ) {
 }
 
 
-function make_key_name( $app_id ) {
-	global $dbconn;
+function make_key_name_from_app( $app_id ) {
 	global $UP_config;
+    $app_id = sanify($app_id);
 
-	$query   = "SELECT pool_id FROM app_list WHERE app_id = " . $app_id;
-	$result  = pg_query( $dbconn, $query );
-	$arr     = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+    # SJC make a JOIN ?
+	$query   = "SELECT pool_id FROM app_list WHERE app_id = ?";
+	$arr     = db_query( $query, array($app_id) );
 	$pool_id = $arr['pool_id'];
 
-	$query = "SELECT * from pools WHERE pool_id = " .$pool_id ;
-
-	$result = pg_query( $dbconn, $query );
-	$arr    = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
-
-	return  ( $UP_config['ssh_keydir']. '/'. $arr['pool_id'].'@'. $arr['remote_user'] . '@' . $arr['remote_host'] . '.id_rsa' );
-
-
+    return make_key_name_from_pool( $pool_id );
 }
 
-function make_staging_directory( $dbconn, $app_id, $user_id, $job_id  ){ 
+function make_staging_directory( $app_id, $user_id, $job_id  ){ 
 	global $UP_config;
 	global $_SESSION;
 
@@ -657,11 +639,11 @@ function make_staging_directory( $dbconn, $app_id, $user_id, $job_id  ){
 	$UP_make_staging_directory = $UP_config['make_staging_directory'];
 
 
-	$app_user = get_app_user( $dbconn, $app_id );
-	$app_host = get_app_host( $dbconn, $app_id );
-	$app_path = get_app_path( $dbconn, $app_id );
+	$app_user = get_app_user( $app_id );
+	$app_host = get_app_host( $app_id );
+	$app_path = get_app_path( $app_id );
 
-	$key = make_key_name( $app_id );
+	$key = make_key_name_from_app ( $app_id );
 
 	$cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key; #$app_user . '@'.$app_host. '.id_rsa';
 	$cmd = $cmd . ' '. $app_user .'@' . $app_host;
@@ -691,11 +673,12 @@ print "-->";
 }
 
 
-function get_job_status( $dbconn, $staging_dir, $job_id, $user_id ) {
-	$query  = " SELECT status, substatus, app_id FROM job_list WHERE job_id = " . sanify( $job_id );
-	$result = pg_query( $dbconn, $query );
-	$arr    = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+function get_job_status( $staging_dir, $job_id, $user_id ) {
+    $job_id = sanify($job_id);
 
+	#$query  = "SELECT status, substatus, app_id FROM job_list WHERE job_id = ?" . sanify( $job_id );
+	$query  = "SELECT status, substatus, app_id FROM job_list WHERE job_id = ?";
+	$arr    = db_query( $query, array($job_id) );
 	$app_id = $arr[ 'app_id' ];
 
 #echo "STATUS:: [".$arr['status']."]";
@@ -713,11 +696,11 @@ function get_job_status( $dbconn, $staging_dir, $job_id, $user_id ) {
 		$UP_ssh_keydir			= $UP_config['ssh_keydir'];
 		$UP_job_status			= $UP_config['job_status'];
 
-	$app_user = get_app_user( $dbconn, $app_id );
-	$app_host = get_app_host( $dbconn, $app_id );
-	$app_path = get_app_path( $dbconn, $app_id );
+	$app_user = get_app_user( $app_id );
+	$app_host = get_app_host( $app_id );
+	$app_path = get_app_path( $app_id );
 
-	$key = make_key_name( $app_id );
+	$key = make_key_name_from_app ( $app_id );
 
 #	$cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $UP_ssh_keydir.'/'. $app_user . '@'. $app_host. '.id_rsa' . ' '. $app_user.'@'.$app_host;
 	$cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key . ' '. $app_user.'@'.$app_host;
@@ -737,11 +720,13 @@ function get_job_status( $dbconn, $staging_dir, $job_id, $user_id ) {
 	$status = substr( sanify( $output[0] ), 0, 2 );
 	$substatus = substr( sanify( $output[1] ), 0 , 2);
 
-	$query = "UPDATE job_list SET status= '".$status."' , substatus='". $substatus ."' WHERE job_id = " . $job_id;
+	#$query = "UPDATE job_list SET status= '".$status."' , substatus='". $substatus ."' WHERE job_id = " . $job_id;
+	$query = "UPDATE job_list SET status= ?, substatus=? WHERE job_id = ?";
 
 #echo $query."</BR>";
 
-	pg_query( $dbconn, $query );
+    # SJC check result?
+	$result = db_query( $query, array($status, $substatus, $job_id) );
 
 	$wt=-1;
 	foreach( $output as $t ) {
@@ -753,15 +738,16 @@ function get_job_status( $dbconn, $staging_dir, $job_id, $user_id ) {
 		}
 	}
 
-				$query = "UPDATE job_list SET wall_time = $wt WHERE job_id = ". $job_id;
-		    $result =  pg_query( $dbconn, $query );
+    #$query = "UPDATE job_list SET wall_time = $wt WHERE job_id = ". $job_id;
+    $query = "UPDATE job_list SET wall_time = ? WHERE job_id = ?";
+    $result =  db_query( $query, array($wt, $job_id) );
 
 	return $output;
 	}
 	
 }
 
-function copy_metadata_to_staging_directory( $dbconn, $app_id, $staging_dir, $filename, $contents ) {
+function copy_metadata_to_staging_directory( $app_id, $staging_dir, $filename, $contents ) {
 	global $UP_config;
 
 	$UP_ssh			= $UP_config['ssh'];
@@ -770,11 +756,11 @@ function copy_metadata_to_staging_directory( $dbconn, $app_id, $staging_dir, $fi
 	$UP_ssh_keydir			= $UP_config['ssh_keydir'];
 	$UP_make_staging_directory			= $UP_config['make_staging_directory'];
 
-	$app_user = get_app_user( $dbconn, $app_id );
-	$app_host = get_app_host( $dbconn, $app_id );
-	$app_path = get_app_path( $dbconn, $app_id );
+	$app_user = get_app_user( $app_id );
+	$app_host = get_app_host( $app_id );
+	$app_path = get_app_path( $app_id );
 
-	$key = make_key_name( $app_id );
+	$key = make_key_name_from_app ( $app_id );
 
 #	$cmd = $UP_scp . ' -v  '. $UP_ssh_key . ' '. $UP_ssh_keydir.'/'. $app_user . '@'.$app_host.'.id_rsa';
 
@@ -795,7 +781,7 @@ function copy_metadata_to_staging_directory( $dbconn, $app_id, $staging_dir, $fi
 	unlink( $tempfile );
 }
   
-function copy_file_to_staging_directory( $dbconn, $app_id, $staging_dir, $file, $input_index , $user_id ) {
+function copy_file_to_staging_directory( $app_id, $staging_dir, $file, $input_index , $user_id ) {
 	global $UP_config;
 
 	$UP_ssh			= $UP_config['ssh'];
@@ -804,11 +790,11 @@ function copy_file_to_staging_directory( $dbconn, $app_id, $staging_dir, $file, 
 	$UP_ssh_keydir			= $UP_config['ssh_keydir'];
 	$UP_make_staging_directory			= $UP_config['make_staging_directory'];
 
-	$app_user = get_app_user( $dbconn, $app_id );
-	$app_host = get_app_host( $dbconn, $app_id );
-	$app_path = get_app_path( $dbconn, $app_id );
+	$app_user = get_app_user( $app_id );
+	$app_host = get_app_host( $app_id );
+	$app_path = get_app_path( $app_id );
 
-	$key = make_key_name( $app_id );
+	$key = make_key_name_from_app ( $app_id );
 
 #	$cmd = $UP_scp . ' -v  '. $UP_ssh_key . ' '. $UP_ssh_keydir.'/'. $app_user . '@'.$app_host.'.id_rsa';
 	$cmd = $UP_scp . ' -v  '. $UP_ssh_key . ' '. $key;
@@ -827,164 +813,199 @@ function copy_file_to_staging_directory( $dbconn, $app_id, $staging_dir, $file, 
 	
 }
 
-function get_app_script( $dbconn, $app_id ) {
-	$query = 'SELECT app_script FROM app_list WHERE app_id = ' . $app_id;
-	$result =  pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+function get_app_script( $app_id ) {
+    $app_id = sanify($app_id);
+	$query = 'SELECT app_script FROM app_list WHERE app_id = ?';
+	$arr = db_query( $query, array($app_id) );
 	if( $arr != NULL ) {
 		return $arr['app_script'];
 	}
-	else { return NULL; }
+	else {
+        return NULL;
+    }
 }
 
 
-function get_app_user( $dbconn, $app_id ) {
-	$query   = "SELECT pool_id FROM app_list WHERE app_id = ". $app_id;
-	$result  =  pg_query( $dbconn, $query );
-	$arr     = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+function get_app_user( $app_id ) {
+    $app_id = sanify($app_id);
+
+    # SJC Make a JOIN?
+	#$query   = "SELECT pool_id FROM app_list WHERE app_id = ". $app_id;
+	$query   = "SELECT pool_id FROM app_list WHERE app_id = ?";
+	$arr     = db_query( $query, array($app_id) );
 	$pool_id = $arr['pool_id'];
 
-	$query   = 'SELECT remote_host, remote_user FROM pools WHERE pool_id = ' . $pool_id;
-	$result  =  pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+	#$query   = 'SELECT remote_host, remote_user FROM pools WHERE pool_id = ' . $pool_id;
+	$query   = 'SELECT remote_host, remote_user FROM pools WHERE pool_id = ?';
+	$arr     = db_query( $query, array($pool_id) );
 	if( $arr != NULL ) {
 		return $arr['remote_user'];
 	}
-	else { return NULL; }
+	else {
+        return NULL;
+    }
 }
 
-function get_app_path( $dbconn, $app_id ) {
+function get_app_path( $app_id ) {
+    $app_id = sanify($app_id);
 
-	$query   = "SELECT pool_id FROM app_list WHERE app_id = ". $app_id;
-	$result  =  pg_query( $dbconn, $query );
-	$arr     = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+    # SJC Make a JOIN?
+	$query   = "SELECT pool_id FROM app_list WHERE app_id = ?";
+	$arr     = db_query( $query, array($app_id) );
 	$pool_id = $arr['pool_id'];
 
-	$query = 'SELECT script_path FROM pools WHERE pool_id = ' . $pool_id;
-	$result =  pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+	$query = 'SELECT script_path FROM pools WHERE pool_id = ?';
+	$arr   = db_query( $query, array($pool_id) );
 	if( $arr != NULL ) {
 		return $arr['script_path'].'/';
 	}
-	else { return NULL; }
+	else {
+        return NULL;
+    }
 
 }
 
-function get_app_host( $dbconn, $app_id ) {
+function get_app_host( $app_id ) {
+    $app_id = sanify($app_id);
 
-	$query   = "SELECT pool_id FROM app_list WHERE app_id = ". $app_id;
-	$result  =  pg_query( $dbconn, $query );
-	$arr     = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+    # SJC Make a JOIN?
+	$query   = "SELECT pool_id FROM app_list WHERE app_id = ?";
+	$arr     = db_query( $query, array($app_id) );
 	$pool_id = $arr['pool_id'];
 
-	$query = 'SELECT remote_host, remote_user FROM pools WHERE pool_id = ' . $pool_id;
-	$result =  pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+	$query = 'SELECT remote_host, remote_user FROM pools WHERE pool_id = ?';
+	$arr   = db_query( $query, array($pool_id) );
 	if( $arr != NULL ) {
 		return $arr['remote_host'];
 	}
-	else { return NULL; }
+	else {
+        return NULL;
+    }
 }
 
 
 function get_app_dspace_collection( $app_id ) {
 	$app_id = sanify( $app_id );
 
-	$query = "SELECT dspace_collection FROM app_list WHERE app_id  = '". $app_id . "'";
-	$result = pg_query( $query );
-	$arr =pg_fetch_array( $result, NULL, PGSQL_ASSOC );
-	if( isset( $arr['dspace_collection'] )) { return $arr['dspace_collection']; } else { return NULL; }
+	$query = "SELECT dspace_collection FROM app_list WHERE app_id  = ?";
+	$arr   = db_query( $query, array($app_id) );
+	if( isset( $arr['dspace_collection'] )) {
+        return $arr['dspace_collection'];
+    }
+    else {
+        return NULL;
+    }
 }
 
 function get_app_name( $app_id ) {
 	$app_id = sanify( $app_id );
 
-	$query = "SELECT app_name FROM app_list WHERE app_id  = '". $app_id . "'";
-	$result = pg_query( $query );
-	$arr =pg_fetch_array( $result, NULL, PGSQL_ASSOC );
-	if( isset( $arr['app_name'] )) { return $arr['app_name']; } else { return NULL; }
+	$query = "SELECT app_name FROM app_list WHERE app_id  = ?";
+	$arr   = db_query( $query, array($app_id) );
+	if( isset( $arr['app_name'] )) {
+        return $arr['app_name'];
+    }
+    else {
+        return NULL;
+    }
 }
 
 function get_app_id_for_job( $job_id ) {
-	
 	$job_id = sanify($job_id);
 
-	$query = "SELECT app_id FROM job_list WHERE job_id  = '". $job_id . "'";
-	$result = pg_query( $query );
-	$arr =pg_fetch_array( $result, NULL, PGSQL_ASSOC );
-	if( isset( $arr['app_id'] )) { return $arr['app_id']; } else { return NULL; }
+	#$query = "SELECT app_id FROM job_list WHERE job_id  = '". $job_id . "'";
+	$query = "SELECT app_id FROM job_list WHERE job_id  = ?";
+	$arr = db_query( $query, array($job_id) );
+	if( isset( $arr['app_id'] )) {
+        return $arr['app_id'];
+    }
+    else {
+        return NULL;
+    }
 }
 
 
 function get_app_id( $app_name ) {
-	
 	$app_name = sanify($app_name);
 
-	$query = "SELECT app_id FROM app_list WHERE app_name  = '". $app_name . "'";
-	$result = pg_query( $query );
-	$arr =pg_fetch_array( $result, NULL, PGSQL_ASSOC );
-	if( isset( $arr['app_id'] )) { return $arr['app_id']; } else { return NULL; }
+	#$query = "SELECT app_id FROM app_list WHERE app_name  = '". $app_name . "'";
+	$query = "SELECT app_id FROM app_list WHERE app_name = ?";
+	$arr = db_query( $query, array($app_name) );
+	if( isset( $arr['app_id'] )) {
+        return $arr['app_id'];
+    }
+    else {
+        return NULL;
+    }
 }
 
 function validate_app_type( $uid, $app_id ) {
 	$uid = sanify( $uid );
 	$app_id = sanify( $app_id );
-	$query = 'SELECT * FROM app_list a, acl b WHERE  a.app_id = '. $app_id.' AND (( a.app_id = b.app_id AND  userid = '.$uid.' ))';
+	#$query = 'SELECT * FROM app_list a, acl b WHERE  a.app_id = '. $app_id.' AND (( a.app_id = b.app_id AND  userid = '.$uid.' ))';
+	$query = 'SELECT * FROM app_list a, acl b WHERE  a.app_id = ? AND (( a.app_id = b.app_id AND  userid = ? ))';
 
-	$result = pg_query( $query );
-	$arr =pg_fetch_array( $result, NULL, PGSQL_ASSOC );
-	if( isset( $arr['app_id'] )) { return true; } else { return false;  }
+	$arr = db_query( $query, array($app_id, $uid) );
+	if( isset( $arr['app_id'] )) {
+        return true;
+    }
+    else {
+        return false;
+    }
 }
 
-function get_app_memory_requirement( $dbconn, $app_id ) {
-	$query = "SELECT memory from app_list where app_id=".$app_id;
-	$results = pg_query( $query );
-	$arr = pg_fetch_array( $results,  NULL, PGSQL_ASSOC );
+function get_app_memory_requirement( $app_id ) {
+    $app_id = sanify($app_id);
+	$query = "SELECT memory from app_list where app_id = ?";
+	$arr = db_query( $query, array($app_id) );
 	return $arr['memory'];
 }
-function get_app_cpu_requirement( $dbconn, $app_id ) {
-	$query = "SELECT ncpus from app_list where app_id=".$app_id;
-	$results = pg_query( $query );
-	$arr = pg_fetch_array( $results,  NULL, PGSQL_ASSOC );
+
+function get_app_cpu_requirement( $app_id ) {
+    $app_id = sanify($app_id);
+	$query = "SELECT ncpus from app_list where app_id = ?";
+	$arr = db_query( $query, array($app_id) );
 	return $arr['ncpus'];
 }
 
-function get_app_walltime_requirement( $dbconn, $app_id ) {
-	$query = "SELECT wall_time  from app_list where app_id=".$app_id;
-	$results = pg_query( $query );
-	$arr = pg_fetch_array( $results,  NULL, PGSQL_ASSOC );
+function get_app_walltime_requirement( $app_id ) {
+    $app_id = sanify($app_id);
+	$query = "SELECT wall_time  from app_list where app_id = ?";
+	$arr = db_query( $query, array($app_id) );
 	return $arr['wall_time'];
 }
 
-function get_app_input_file_count( $dbconn, $app_id ) {
-	$query = "SELECT count(index) from app_input where app_id=".$app_id;
-	$results = pg_query( $query );
-	$arr = pg_fetch_array( $results,  NULL, PGSQL_ASSOC );
+function get_app_input_file_count( $app_id ) {
+    $app_id = sanify($app_id);
+	$query = "SELECT count(index) from app_input where app_id = ?";
+	$arr = db_query( $query, array($app_id) );
 	return $arr['count'];
 }
 
-function get_app_output_file_count( $dbconn, $app_id ) {
-	$query = "SELECT count(index) from app_output where app_id=".$app_id;
-	$results = pg_query( $query );
-	$arr = pg_fetch_array( $results,  NULL, PGSQL_ASSOC );
+function get_app_output_file_count( $app_id ) {
+    $app_id = sanify($app_id);
+	$query = "SELECT count(index) from app_output where app_id = ?";
+	$arr = db_query( $query, array($app_id) );
 	return $arr['count'];
 }
 
 function app_input_file_description( $app_id ) {
-	$query = "SELECT * FROM app_input WHERE app_id = ".sanify($app_id). " ORDER BY index ASC ";
-	$results = pg_query( $query );
-	$arr = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
+    $app_id = sanify($app_id);
+	$query = "SELECT * FROM app_input WHERE app_id = ? ORDER BY index ASC ";
+	$allarr = db_query_all( $query, array($app_id) );
 
 	$d=array();
-	while( isset ($arr['index'] ) ) {
-		$d[] =  array( 'description' => $arr['description'], 'index' => $arr['index'], 'required' => $arr['required'] );
-		$arr = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
-	}
+    if (!empty($allarr)) {
+        foreach ($allarr as $arr) {
+            $d[] =  array( 'description' => $arr['description'], 'index' => $arr['index'],
+                        'required' => $arr['required'] );
+        }
+    }
 
 	return $d;
 }
 
-function register_job_details( $dbconn, $app_id, $userid, $description, $staging_dir, $project_id, $jid ) {
+function register_job_details( $app_id, $userid, $description, $staging_dir, $project_id, $jid ) {
 #	$query = "SELECT nextval('job_seq_id' )";
 #	$result = pg_query(	$dbconn, $query );
 #	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
@@ -999,63 +1020,78 @@ function register_job_details( $dbconn, $app_id, $userid, $description, $staging
 	}
 
 
-	$query = "INSERT INTO job_list ( job_id, app_id, userid,  description, staging_dir, is_published, project_id ) VALUES (" . $jid  . ", " . $app_id . ", " . $userid . ",  '" . sanify($description) . "' , '" . sanify( $staging_dir) . "', false, ". $project_id . "  )";
+	#$query = "INSERT INTO job_list ( job_id, app_id, userid,  description, staging_dir, is_published, project_id ) VALUES (" . $jid  . ", " . $app_id . ", " . $userid . ",  '" . sanify($description) . "' , '" . sanify( $staging_dir) . "', false, ". $project_id . "  )";
+	$query = "INSERT INTO job_list ( job_id, app_id, userid,  description, staging_dir, is_published, project_id ) VALUES ( ?, ?, ?, ?, ?, ?, ? )";
 
-
-	pg_query( $query );
+    $s_description = sanify($description);
+    $s_staging_dir = sanify($staging_dir);
+	$result = db_query( $query, array($jid, $app_id, $userid, $s_description, $s_staging_dir,
+                                        false, $project_id) );
 
 	return $jid;
 }
 
-function set_job_project( $jid, $projectid ) {
-	global $dbconn;
-	$query = "UPDATE job_list set project_id = " . sanify($projectid) . " WHERE job_id = " . sanify($jid);
+function set_job_project( $jid, $project_id ) {
+	#$query = "UPDATE job_list set project_id = " . sanify($project_id) . " WHERE job_id = " . sanify($jid);
+	$query = "UPDATE job_list set project_id = ? WHERE job_id = ?";
+    $jid = sanify($jid);
+    $project_id = sanify($project_id);
 
-	$result = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+	$arr = db_query( $query, array($project_id, $jid) );
 }
 
-function check_project_owner( $uid, $jid ) {
-	global $dbconn;
+function check_project_owner( $uid, $project_id ) {
+    $project_id = sanify($project_id);
+    $uid = sanify($uid);
 
-	$query =" SELECT count(*) FROM projects WHERE project_id=".sanify( $jid ). " AND userid = " . sanify($uid) ;
-	$result = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+	#$query =" SELECT count(*) FROM projects WHERE project_id=".sanify( $project_id ). " AND userid = " . sanify($uid) ;
+	$query = "SELECT count(*) FROM projects WHERE project_id = ? AND userid = ?";
+	$arr = db_query( $query, array($project_id, $uid) );
 
-
-	if( $arr['count'] > 0 ) { return true; } else { return false; }
+	if( $arr['count'] > 0 ) {
+        return true;
+    }
+    else {
+        return false;
+    }
 }
 
 
 function check_job_owner( $uid, $jid ) {
-	global $dbconn;
+    $jid = sanify($jid);
+    $uid = sanify($uid);
+	#$query =" SELECT count(*) FROM job_list WHERE job_id=".sanify( $jid ). " AND userid = " . sanify($uid) ;
+	$query ="SELECT count(*) FROM job_list WHERE job_id = ? AND userid = ?";
+	$arr = db_query( $query, array($jid, $uid) );
 
-	$query =" SELECT count(*) FROM job_list WHERE job_id=".sanify( $jid ). " AND userid = " . sanify($uid) ;
-	$result = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
 
-
-	if( $arr['count'] > 0 ) { return true; } else { return false; }
+	if( $arr['count'] > 0 ) {
+        return true;
+    }
+    else {
+        return false;
+    }
 }
 
-function return_job_output_file( $jid, $idx , $user_id ) {
-
-	global $dbconn;
+function return_job_output_file( $jid, $idx ) {
 	global $UP_config;
-	$query ="SELECT * FROM job_list WHERE job_id = " . sanify( $jid );
-	$result = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+    $jid = sanify($jid);
+    $idx = sanify($idx);
+
+	#$query ="SELECT * FROM job_list WHERE job_id = " . sanify( $jid );
+	$query ="SELECT * FROM job_list WHERE job_id = ?";
+	$arr = db_query( $query, array($jid) );
 
 	$staging_dir = $arr['staging_dir' ];
-
 	$app_id = $arr['app_id'];
 
-	$query = "SELECT * FROM app_output WHERE app_id = ".$app_id." AND index = " . sanify( $idx);
-	$result = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+	#$query = "SELECT * FROM app_output WHERE app_id = ".$app_id." AND index = " . sanify( $idx);
+	$query = "SELECT * FROM app_output WHERE app_id = ? AND index = ?";
+	$arr = pg_query( $query, array($app_id, $idx) );
 
 	if( !isset( $arr['app_id'] ) ) {
 		echo "No such output file";
+        # SJC Be more graceful
 		die_now();
 	}
 
@@ -1067,11 +1103,11 @@ function return_job_output_file( $jid, $idx , $user_id ) {
 	$UP_cat		       = $UP_config['cat'];
 	$UP_filetest		       = $UP_config['filetest'];
 
-	$app_user = get_app_user( $dbconn, $app_id );
-	$app_host = get_app_host( $dbconn, $app_id );
-	$app_path = get_app_path( $dbconn, $app_id );
+	$app_user = get_app_user( $app_id );
+	$app_host = get_app_host( $app_id );
+	$app_path = get_app_path( $app_id );
 
-	$key = make_key_name( $app_id );
+	$key = make_key_name_from_app ( $app_id );
 
 		$cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key . ' '. $app_user.'@'.$app_host;
 		$cmd = $cmd . ' ' . $app_path.$UP_filetest . ' '. $staging_dir.'/output-'. $idx;
@@ -1080,6 +1116,7 @@ function return_job_output_file( $jid, $idx , $user_id ) {
 		exec( $cmd, $output );
 		if( $output[0] == "0" ) {
 			# return a 403
+            # SJC Hmm ?
 			header("HTTP/1.0 404 Not Found");
 			return;
 		}
@@ -1106,27 +1143,27 @@ function return_job_output_file( $jid, $idx , $user_id ) {
 }
 
 
-function remove_job_file( $dbconn, $jid, $file, $staging_file, $user_id ) {
+function remove_job_file( $jid, $file, $staging_file ) {
 	global $UP_config;
+    $jid = sanify( $jid );
 
-	$query ="SELECT staging_dir, app_id FROM job_list WHERE job_id = " . sanify( $jid );
-	$result = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+	#$query ="SELECT staging_dir, app_id FROM job_list WHERE job_id = " . sanify( $jid );
+	$query ="SELECT staging_dir, app_id FROM job_list WHERE job_id = ?"; 
+	$arr = db_query( $query, array($jid) );
 
 	$staging_dir = $arr['staging_dir' ];
-
 	$app_id = $arr['app_id'];
 
 	$UP_ssh			 = $UP_config['ssh'];
 	$UP_ssh_key		 = $UP_config['ssh_key'];
 	$UP_ssh_keydir	 = $UP_config['ssh_keydir'];
 
-	$app_user = get_app_user( $dbconn, $app_id );
-	$app_host = get_app_host( $dbconn, $app_id );
-	$app_path = get_app_path( $dbconn, $app_id );
+	$app_user = get_app_user( $app_id );
+	$app_host = get_app_host( $app_id );
+	$app_path = get_app_path( $app_id );
 
 
-	$key = make_key_name( $app_id );
+	$key = make_key_name_from_app ( $app_id );
 	//copy the remote file $file to the staging_file
 
 	$cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key . ' '. $app_user.'@'.$app_host;
@@ -1144,15 +1181,15 @@ function remove_job_file( $dbconn, $jid, $file, $staging_file, $user_id ) {
 }
 
 
-function copy_job_file( $dbconn, $jid, $file, $staging_file, $user_id ) {
+function copy_job_file( $jid, $file, $staging_file, $user_id ) {
 	global $UP_config;
+    $jid = sanify( $jid );
 
-	$query ="SELECT staging_dir, app_id FROM job_list WHERE job_id = " . sanify( $jid );
-	$result = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+	#$query ="SELECT staging_dir, app_id FROM job_list WHERE job_id = " . sanify( $jid );
+	$query ="SELECT staging_dir, app_id FROM job_list WHERE job_id = ?";
+	$arr = db_query( $query, array($jid) );
 
 	$staging_dir = $arr['staging_dir' ];
-
 	$app_id = $arr['app_id'];
 
 	$UP_scp			 = $UP_config['scp'];
@@ -1162,12 +1199,12 @@ function copy_job_file( $dbconn, $jid, $file, $staging_file, $user_id ) {
 	$UP_make_input_tar = $UP_config['make_input_tar'];
 	$UP_cat			 = $UP_config['cat'];
 
-	$app_user = get_app_user( $dbconn, $app_id );
-	$app_host = get_app_host( $dbconn, $app_id );
-	$app_path = get_app_path( $dbconn, $app_id );
+	$app_user = get_app_user( $app_id );
+	$app_host = get_app_host( $app_id );
+	$app_path = get_app_path( $app_id );
 
 
-	$key = make_key_name( $app_id );
+	$key = make_key_name_from_app ( $app_id );
 	//copy the remote file $file to the staging_file
 
 	$cmd = $UP_scp . ' '. $UP_ssh_key . ' '. $key . ' '. $app_user.'@'.$app_host;
@@ -1184,20 +1221,20 @@ function copy_job_file( $dbconn, $jid, $file, $staging_file, $user_id ) {
 }
 
 function return_job_input_file(  $jid, $idx , $user_id) {
-	global $dbconn;
 	global $UP_config;
+    $jid = sanify( $jid );
+    $idx = sanify( $idx );
 
-	$query ="SELECT staging_dir, app_id FROM job_list WHERE job_id = " . sanify( $jid );
-	$result = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+	#$query ="SELECT staging_dir, app_id FROM job_list WHERE job_id = " . sanify( $jid );
+	$query ="SELECT staging_dir, app_id FROM job_list WHERE job_id = ?";
+	$arr = db_query( $query, array($jid) );
 
 	$staging_dir = $arr['staging_dir' ];
-
 	$app_id = $arr['app_id'];
 
-	$query = "SELECT * FROM input_file WHERE job_id = ".sanify($jid)." AND index = " . sanify( $idx);
-	$result = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+	#$query = "SELECT * FROM input_file WHERE job_id = ".sanify($jid)." AND index = " . sanify( $idx);
+	$query = "SELECT * FROM input_file WHERE job_id = ? AND index = ?";
+	$arr = db_query( $query, array($jid, $idx) );
 
 	if( !isset( $arr['job_id']) ) {
 		return 0;
@@ -1210,12 +1247,12 @@ function return_job_input_file(  $jid, $idx , $user_id) {
 	$UP_make_input_tar = $UP_config['make_input_tar'];
 	$UP_cat        = $UP_config['cat'];
 
-	$app_user = get_app_user( $dbconn, $app_id );
-	$app_host = get_app_host( $dbconn, $app_id );
-	$app_path = get_app_path( $dbconn, $app_id );
+	$app_user = get_app_user( $app_id );
+	$app_host = get_app_host( $app_id );
+	$app_path = get_app_path( $app_id );
 
 
-	$key = make_key_name( $app_id );
+	$key = make_key_name_from_app ( $app_id );
 	// call the tar script
 
 	$cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key . ' '. $app_user.'@'.$app_host;
@@ -1234,12 +1271,12 @@ function return_job_input_file(  $jid, $idx , $user_id) {
 }
 
 function return_job_tar_file(  $jid , $user_id ) {
-	global $dbconn;
 	global $UP_config;
+	$jid = sanify( $jid );
 
-	$query ="SELECT staging_dir, app_id FROM job_list WHERE job_id = " . sanify( $jid );
-	$result = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+	#$query ="SELECT staging_dir, app_id FROM job_list WHERE job_id = " . sanify( $jid );
+	$query ="SELECT staging_dir, app_id FROM job_list WHERE job_id = ?";
+	$arr = db_query( $query, array($jid) );
 
 	$staging_dir = $arr['staging_dir' ];
 
@@ -1251,11 +1288,11 @@ function return_job_tar_file(  $jid , $user_id ) {
 	$UP_make_staging_directory        = $UP_config['make_staging_directory'];
 	$UP_make_input_tar        = $UP_config['make_input_tar'];
 
-	$app_user = get_app_user( $dbconn, $app_id );
-	$app_host = get_app_host( $dbconn, $app_id );
-	$app_path = get_app_path( $dbconn, $app_id );
+	$app_user = get_app_user( $app_id );
+	$app_host = get_app_host( $app_id );
+	$app_path = get_app_path( $app_id );
 
-	$key = make_key_name( $app_id );
+	$key = make_key_name_from_app ( $app_id );
 
 	// call the tar script
 
@@ -1278,16 +1315,21 @@ function return_job_tar_file(  $jid , $user_id ) {
 	exit;
 }
 
-function record_input_type( $dbconn, $job_id, $name, $mime_type, $index ) {
-	$query ="INSERT INTO input_file ( job_id, filename, mimetype, index ) VALUES (" . sanify($job_id) . ", '" . sanify($name) ."', '".$mime_type."', " . sanify( $index ) . ")";
-	echo "</br>";
+function record_input_type( $job_id, $name, $mime_type, $index ) {
+	$job_id = sanify($job_id);
+    $name = sanify($name);
+    $mime_type = sanify($mime_type);
+    $index = sanify($index);
+
+	#$query ="INSERT INTO input_file ( job_id, filename, mimetype, index ) VALUES (" . sanify($job_id) . ", '" . sanify($name) ."', '".$mime_type."', " . sanify( $index ) . ")";
+	$query ="INSERT INTO input_file ( job_id, filename, mimetype, index ) VALUES ( ?, ?, ?, ? )";
+	#echo "</br>";
 	//echo $query;
-	$result = pg_query( $dbconn, $query );
+	$result = db_query( $query, array($job_id, $name, $mime_type, $index) );
 }
 
-function execute_job( $dbconn, $job_id, $app_id, $app, $staging_dir ) {
+function execute_job( $job_id, $app_id, $app, $staging_dir ) {
 	global $UP_config;
-
 	$job_id = sanify( $job_id );
 	$app    = sanify( $app );
 	$staging_dir    = sanify( $staging_dir );
@@ -1303,19 +1345,19 @@ function execute_job( $dbconn, $job_id, $app_id, $app, $staging_dir ) {
 	$UP_delete_job = $UP_config['delete_job'];
 	$UP_run_job    = $UP_config['run_job'];
 
-	$app_user = get_app_user( $dbconn, $app_id );
-	$app_host = get_app_host( $dbconn, $app_id );
-	$app_path = get_app_path( $dbconn, $app_id );
+	$app_user = get_app_user( $app_id );
+	$app_host = get_app_host( $app_id );
+	$app_path = get_app_path( $app_id );
 
-	$key = make_key_name( $app_id );
+	$key = make_key_name_from_app ( $app_id );
 
-	$app_script = get_app_script( $dbconn, $app_id );
+	$app_script = get_app_script( $app_id );
 
-	$input_file_count  = get_app_input_file_count ( $dbconn, $app_id );
-	$output_file_count = get_app_output_file_count( $dbconn, $app_id );
-	$memory_requirement = get_app_memory_requirement( $dbconn, $app_id );
-	$cpu_requirement    = get_app_cpu_requirement( $dbconn, $app_id );
-	$walltime           = get_app_walltime_requirement( $dbconn, $app_id );
+	$input_file_count  = get_app_input_file_count ( $app_id );
+	$output_file_count = get_app_output_file_count( $app_id );
+	$memory_requirement = get_app_memory_requirement( $app_id );
+	$cpu_requirement    = get_app_cpu_requirement( $app_id );
+	$walltime           = get_app_walltime_requirement( $app_id );
 		
 	$cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key;
 	$cmd = $cmd . ' '. $app_user .'@' . $app_host;
@@ -1334,26 +1376,24 @@ print "-->";
 
 
 function delete_job( $job_id ) {
-	global $dbconn;
 	global $UP_config;
-
 	$job_id =sanify( $job_id );
 
-	$query = "SELECT count(*) FROM job_list WHERE job_id = ".$job_id ." AND deleted = false";
-	$result = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+	#$query = "SELECT count(*) FROM job_list WHERE job_id = ".$job_id ." AND deleted = false";
+	$query = "SELECT count(*) FROM job_list WHERE job_id = ? AND deleted = false";
+	$arr = db_query( $query, array($job_id) );
 
 	if( $arr['count']==0 ) { 
 		return 0;
 	}
 
-	$query = "UPDATE job_list SET deleted= true WHERE job_id = " .$job_id . " AND deleted=false";
-	$result = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+	#$query = "UPDATE job_list SET deleted= true WHERE job_id = " .$job_id . " AND deleted=false";
+	$query = "UPDATE job_list SET deleted= true WHERE job_id = ? AND deleted=false";
+	$arr = db_query( $query, array($job_id) );
 
-	$query = "SELECT * FROM job_list WHERE job_id = " . sanify( $job_id );
-	$result = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+	#$query = "SELECT * FROM job_list WHERE job_id = " . sanify( $job_id );
+	$query = "SELECT * FROM job_list WHERE job_id = ?";
+	$arr = db_query( $query, array($job_id) );
 	$app_id = $arr['app_id'];
 	$staging_dir = $arr['staging_dir'];
 
@@ -1374,12 +1414,12 @@ function delete_job( $job_id ) {
 	$UP_ssh_keydir = $UP_config['ssh_keydir'];
 	$UP_delete_job	= $UP_config['delete_job'];
 
-	$app_user = get_app_user( $dbconn, $app_id );
-	$app_host = get_app_host( $dbconn, $app_id );
-	$app_path = get_app_path( $dbconn, $app_id );
+	$app_user = get_app_user( $app_id );
+	$app_host = get_app_host( $app_id );
+	$app_path = get_app_path( $app_id );
 
 
-	$key = make_key_name( $app_id );
+	$key = make_key_name_from_app ( $app_id );
 	
 	$cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key;
 	$cmd = $cmd . ' '. $app_user .'@' . $app_host;
@@ -1393,38 +1433,49 @@ function delete_job( $job_id ) {
 }
 
 function is_published( $jid ) {
-		$jid = sanify($jid );
-			$query  = "SELECT is_published FROM job_list WHERE job_id = ".sanify($jid);
-			$result = pg_query(  $query );
-			$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+    $jid = sanify($jid );
 
+    #$query  = "SELECT is_published FROM job_list WHERE job_id = ".sanify($jid);
+    $query  = "SELECT is_published FROM job_list WHERE job_id = ?";
+	$arr = db_query( $query, array($jid) );
 
-
-			if( $arr['is_published'] == 't' ) { 
-				return true; 
-			} else { 
-				return false; 
-			}
+    if( $arr['is_published'] == 't' ) { 
+        return true; 
+    } else { 
+        return false; 
+    }
 }
 
 function output_file_index_of_mimetype( $appid, $mime ) {
-	$query="SELECT index FROM app_output WHERE mimetype='" . sanify( $mime ) . "' AND app_id = " . sanify( $appid );
-	$result = pg_query(  $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
-	if( $arr == NULL ) {  return -1; }
-	else { return $arr['index']; }	
+	$mime = sanify( $mime );
+    $appid = sanify( $appid );
+
+	#$query="SELECT index FROM app_output WHERE mimetype='" . sanify( $mime ) . "' AND app_id = " . sanify( $appid );
+	$query="SELECT index FROM app_output WHERE mimetype = ? AND app_id = ?";
+	$arr = db_query( $query, array($mime, $appid) );
+	if( $arr == NULL ) {
+        return -1;
+    }
+	else {
+        return $arr['index'];
+    }	
 }
 
 function has_output_file_of_mimetype(  $appid, $mime ) {
-	$query="SELECT count(*) FROM app_output WHERE mimetype='" . sanify( $mime ) . "' AND app_id = " . sanify( $appid );
-	$result = pg_query(  $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+	$mime = sanify( $mime );
+    $appid = sanify( $appid );
 
+	#$query="SELECT count(*) FROM app_output WHERE mimetype='" . sanify( $mime ) . "' AND app_id = " . sanify( $appid );
+	$query="SELECT count(*) FROM app_output WHERE mimetype = ? AND app_id = ?";
+	$arr = db_query( $query, array($mime, $appid) );
 	$cnt = $arr['count'];
-	
 
-	if( $cnt == 0 ) {  return false; }
-	else { return true; }	
+	if( $cnt == 0 ) {
+        return false;
+    }
+	else {
+        return true;
+    }	
 }
 
 function is_publishable( $appid, $jid ) {
@@ -1434,38 +1485,16 @@ function is_publishable( $appid, $jid ) {
 	return $result;
 }
 
-
-
-
-function	 get_job_description( $dbconn, $jid ) {
-	$query = "SELECT description FROM job_list WHERE job_id = " . sanify( $jid);
-	$results = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
-	return $arr['description'];
-}
-
-
-function	 get_job_input_filename( $dbconn, $jid, $index ) {
-	$query = "SELECT filename FROM input_file WHERE job_id = " . sanify( $jid) . " AND index = " . sanify($index);
-	$results = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
-	return $arr['filename'];
-}
-
-
 function pool_motd( $pool_id) {
-	global $dbconn;
 	global $UP_config;
-
 	$pool_id = sanify( $pool_id );
 
-	$query   = "SELECT * from pools WHERE pool_id = " . $pool_id;
-	$results = pg_query( $dbconn, $query );
-	$arr     = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
+	$query   = "SELECT * from pools WHERE pool_id = ?";
+	$arr = db_query( $query, array($pool_id) );
 
 	# call app_config on the remote host
 
-	$key = make_key_name2( $pool_id );	
+	$key = make_key_name_from_pool( $pool_id );	
 
 	$UP_ssh		= $UP_config['ssh'];
 	$UP_ssh_key = $UP_config['ssh_key'];
@@ -1487,18 +1516,15 @@ function pool_motd( $pool_id) {
 
 }
 function pool_status( $pool_id) {
-	global $dbconn;
 	global $UP_config;
-
 	$pool_id = sanify( $pool_id );
 
-	$query   = "SELECT * from pools WHERE pool_id = " . $pool_id;
-	$results = pg_query( $dbconn, $query );
-	$arr     = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
+	$query   = "SELECT * from pools WHERE pool_id = ?";
+	$arr = db_query( $query, array($pool_id) );
 
 	# call app_config on the remote host
 
-	$key = make_key_name2( $pool_id );	
+	$key = make_key_name_from_pool( $pool_id );	
 
 	$UP_ssh		= $UP_config['ssh'];
 	$UP_ssh_key = $UP_config['ssh_key'];
@@ -1536,109 +1562,109 @@ function pool_status( $pool_id) {
 }
 
 function app_in_pool( $pool_id, $app_id ) {
-	global $dbconn;
 	$pool_id = sanify( $pool_id );
 	$app_id  = sanify( $app_id  );
 
-	$query = "SELECT * FROM app_list WHERE  pool_id = " . $pool_id . "AND app_id = ". $app_id;
+	#$query = "SELECT * FROM app_list WHERE  pool_id = " . $pool_id . "AND app_id = ". $app_id;
+	$query = "SELECT * FROM app_list WHERE  pool_id = ? AND app_id = ?";
 
-	$results = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
+	$arr = db_query( $query, array($pool_id, $app_id) );
 
 	return ( $arr!=NULL );
 	
 }
 
 function has_access_to_pool( $pool_id, $user_id ) {
-	global $dbconn;
 	$pool_id = sanify( $pool_id );
 	$user_id = sanify( $user_id );
 
-	$query = "SELECT * FROM acl WHERE  user_id = " . $user_id . "AND pool_id = ". $pool_id;
-
-	$results = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
+	#$query = "SELECT * FROM acl WHERE  user_id = " . $user_id . "AND pool_id = ". $pool_id;
+	$query = "SELECT * FROM acl WHERE  user_id = ? AND pool_id = ?";
+	$arr = db_query( $query, array($user_id, $pool_id) );
 
 	return ( $arr!=NULL );
 	
 }
 
 function get_available_pools( $user_id ) {
-	global $dbconn;
-	$query = "SELECT * FROM acl a JOIN pools b ON a.pool_id = b.pool_id WHERE  a.user_id = " . $user_id;
+	$user_id = sanify( $user_id );
 
-	$results = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
+	$query = "SELECT * FROM acl a JOIN pools b ON a.pool_id = b.pool_id WHERE  a.user_id = ?";
+	$allarr = db_query_all( $query, array($user_id) );
 
 	$idx  = array();
 	$desc = array();
 
-	while( $arr!=NULL ) {
-		$idx[] = $arr['pool_id'];
-		$desc[]= $arr['description'];
-		$arr = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
-	}
+    if (! empty($allarr)) {
+        foreach ($allarr as $arr) {
+            $idx[] = $arr['pool_id'];
+            $desc[]= $arr['description'];
+        }
+    }
 	
 	return array( 'index' => $idx , 'description' => $desc );
 }
 
 function get_pools( $user ) {
-	global $dbconn;
 	$user_id = sanify( get_uid( $user ) );
-	$query = "SELECT * FROM pools WHERE pool_id in ( SELECT pool_id from acl WHERE user_id = " . $user_id . ")";
 
-	$results = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
+	#$query = "SELECT * FROM pools WHERE pool_id in ( SELECT pool_id from acl WHERE user_id = " . $user_id . ")";
+	$query = "SELECT * FROM pools WHERE pool_id in ( SELECT pool_id from acl WHERE user_id = ? )";
+	$allarr = db_query_all( $query, array($user_id) );
 	
 	$plist = array();
 #print $query;
-	while( $arr!=NULL ) {
-		$mine= false;
-		$foo = array( 
-			'user' => $arr['remote_user'], 
-			'host'=>$arr['remote_host'], 
-			'description' => $arr['description'], 
-			'path' => $arr['script_path'], 
-			'pool_id' => $arr['pool_id'], 
-			'mine' => $mine,
-		);
-		if( $arr['owner'] == $user_id ) { $foo['mine']=true; }
-		$plist[] = $foo;
-		$arr = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
-	}
+    if (!empty($allarr)) {
+        foreach ($allarr as $arr) {
+            $mine= false;
+            $foo = array( 
+                'user' => $arr['remote_user'], 
+                'host'=>$arr['remote_host'], 
+                'description' => $arr['description'], 
+                'path' => $arr['script_path'], 
+                'pool_id' => $arr['pool_id'], 
+                'mine' => $mine,
+            );
+            if( $arr['owner'] == $user_id ) { $foo['mine']=true; }
+            $plist[] = $foo;
+        }
+    }
 
 	return $plist;
 }
 
 function delete_pool( $user, $pool_id ) {
-	global $dbconn;
 	$user_id = get_uid( $user );
-	$query = "DELETE FROM pools WHERE pool_id = ". $pool_id ." AND owner = " . $user_id;
-	$results = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
+	$pool_id  = (int) sanify( $pool_id );
+
+	#$query = "DELETE FROM pools WHERE pool_id = ". $pool_id ." AND owner = " . $user_id;
+	$query = "DELETE FROM pools WHERE pool_id = ? AND owner = ?";
+	$result = db_query( $query, array($pool_id, $user_id) );
 
 }
 
 function owns_pool( $username, $pool_id ) {
-	global $dbconn;
-
 	$username = sanify( $username );
 	$pool_id  = (int) sanify( $pool_id );
 
 	$user_id = get_uid( $username );
 
-	$query = "SELECT owner FROM pools WHERE pool_id = " . $pool_id . " AND owner = " . $user_id;
+	#$query = "SELECT owner FROM pools WHERE pool_id = " . $pool_id . " AND owner = " . $user_id;
+	$query = "SELECT owner FROM pools WHERE pool_id = ? AND owner = ?";
 
-	$results = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
+	$result = db_query( $query, array($pool_id, $user_id) );
 
-	if( $arr!=NULL ) { return true; }
-	else { return false; }
+	if( $arr!=NULL ) {
+        return true;
+    }
+	else {
+        return false;
+    }
 
 }
 
 function get_key( $pool_id ) {
-	$key = make_key_name2( $pool_id );
+	$key = make_key_name_from_pool( $pool_id );
 
 	header('Content-Type: "application/x-public-key"');
 	header('Content-disposition: attachment; filename="portalkey.rsa.pubkey"' );
@@ -1652,14 +1678,11 @@ function get_key( $pool_id ) {
 }
 
 function add_pool( $user, $remote_user, $remote_host, $script_path, $description ) {
-	global $dbconn;
 	global $UP_config;
 
-	$uid = get_uid( $user );
 	# first get pool id
 	$query = "SELECT nextval('pool_id_seq')";
-	$results = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
+	$arr = db_query( $query, array() );
 
 	$pool_id = $arr['nextval'];
 
@@ -1676,15 +1699,18 @@ function add_pool( $user, $remote_user, $remote_host, $script_path, $description
 	$script_path = preg_replace( "/[^\w\.\/\-\_]/", "", $script_path );
 
 
-	$query = "INSERT INTO pools ( pool_id, owner, remote_user, remote_host, script_path, description ) VALUES ( " . $pool_id. ", ". $user_id . ",'" . $remote_user ."','".$remote_host ."','" . $script_path ."', '". $description ."')";
+	#$query = "INSERT INTO pools ( pool_id, owner, remote_user, remote_host, script_path, description ) VALUES ( " . $pool_id. ", ". $user_id . ",'" . $remote_user ."','".$remote_host ."','" . $script_path ."', '". $description ."')";
+	$query = "INSERT INTO pools ( pool_id, owner, remote_user, remote_host, script_path, description ) VALUES (?, ?, ?, ?, ?, ? )";
 
-	$results = pg_query( $dbconn, $query );
+	$result = db_query( $query, array($pool_id, $user_id, $remote_user, $remote_host, $script_path,
+                                    $description) );
 
 	# Add to ACL
-	$query  = "INSERT INTO acl (pool_id, user_id ) VALUES ( ". $pool_id . "," . $user_id .")";
-	$results = pg_query( $dbconn, $query );
+	#$query  = "INSERT INTO acl (pool_id, user_id ) VALUES ( ". $pool_id . "," . $user_id .")";
+	$query  = "INSERT INTO acl (pool_id, user_id ) VALUES ( ?, ? )";
+	$arr = db_query( $query, array($pool_id, $user_id) );
 
-	$key = make_key_name2( $pool_id );
+	$key = make_key_name_from_pool( $pool_id );
 
 	# Generate a new ssh key
 
@@ -1696,63 +1722,67 @@ function add_pool( $user, $remote_user, $remote_host, $script_path, $description
 }
 
 function get_pool_applications( $pool_id ) {
-	global $dbconn;
+	$pool_id =sanify( $pool_id );
 
-	$query = "SELECT * from app_list WHERE current= true and pool_id = " . $pool_id;
-	$results = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
+	#$query = "SELECT * from app_list WHERE current= true and pool_id = " . $pool_id;
+	$query = "SELECT * FROM app_list WHERE current = true AND pool_id = ?";
+	$allarr = db_query_all( $query, array($pool_id) );
 
 	$list = array();
 
-	while ( $arr != NULL ) {
-		$app_id = $arr['app_id'];
+    if (!empty($allarr)) {
+        foreach ($allarr as $arr) {
+            $app_id = $arr['app_id'];
 
-		# Input 
-		$query2   = "SELECT * FROM app_input WHERE app_id = ". $app_id . " ORDER BY index ASC";
-		$results2 = pg_query( $dbconn, $query2 );
-		$arr2     = pg_fetch_array( $results2, NULL, PGSQL_ASSOC );
+            # Input 
+            #$query2   = "SELECT * FROM app_input WHERE app_id = ". $app_id . " ORDER BY index ASC";
+            $query2   = "SELECT * FROM app_input WHERE app_id = ? ORDER BY index ASC";
+            $allarr2  = db_query_all( $query2, array($app_id) );
 
-		$inp=array();
-		while ( $arr2 != NULL ) {
-			$inp[] = array( 'description' => $arr2['description'], 'mimetype' => $arr2['mimetype'] );
-			$arr2 = pg_fetch_array( $results2, NULL, PGSQL_ASSOC );
-		}
-
-
-		#Output 
-		$query2   = "SELECT * FROM app_output WHERE app_id = ". $app_id . " ORDER BY index ASC";
-		$results2 = pg_query( $dbconn, $query2 );
-		$arr2     = pg_fetch_array( $results2, NULL, PGSQL_ASSOC );
+            $inp=array();
+            if (! empty($allarr2)) {
+                foreach ($allarr2 as $arr2) {
+                    $inp[] = array( 'description' => $arr2['description'], 'mimetype' => $arr2['mimetype'] );
+                }
+            }
 
 
-		$out=array();
-		while ( $arr2 != NULL ) {
-			$out[] = array( 'description' => $arr2['description'], 'mimetype' => $arr2['mimetype'], 'filename' => $arr2['filename'] );
+            #Output 
+            #$query2   = "SELECT * FROM app_output WHERE app_id = ". $app_id . " ORDER BY index ASC";
+            $query2   = "SELECT * FROM app_output WHERE app_id = ? ORDER BY index ASC";
+            $allarr2  = db_query_all( $query2, array($app_id) );
 
-			$arr2 = pg_fetch_array( $results2, NULL, PGSQL_ASSOC );
-		}
+            $out=array();
+            if (!empty($allarr2)) {
+                foreach ($allarr2 as $arr2) {
+                    $out[] = array( 'description' => $arr2['description'],
+                            'mimetype' => $arr2['mimetype'], 'filename' => $arr2['filename'] );
+                }
+            }
 
-		$a = array ( 'ncpus'=>$arr['ncpus'], 'memory'=>$arr['memory'], 'name' => $arr['app_name'], 'script' => $arr['app_script'], 'input' => $inp, 'output' => $out , 'walltime' => $arr['wall_time'] );
+            $a = array ( 'ncpus'=>$arr['ncpus'], 'memory'=>$arr['memory'],
+                    'name' => $arr['app_name'], 'script' => $arr['app_script'],
+                    'input' => $inp, 'output' => $out ,
+                    'walltime' => $arr['wall_time'] );
 
-
-		$list[] = $a;
-		$arr = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
-	}	
+            $list[] = $a;
+        }	
+    }
 
 	return $list;
 }
 
 function refresh_pool_applications( $pool_id ) {
-	global $dbconn;
 	global $UP_config;
+	$pool_id =sanify( $pool_id );
 
-	$query   = "SELECT * from pools WHERE pool_id = " . $pool_id;
-	$results = pg_query( $dbconn, $query );
-	$arr     = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
+	#$query   = "SELECT * FROM pools WHERE pool_id = " . $pool_id;
+	$query   = "SELECT * FROM pools WHERE pool_id = ?";
+	$arr = db_query( $query, array($pool_id) );
 
 	# call app_config on the remote host
 
-	$key = make_key_name2( $pool_id );	
+	$key = make_key_name_from_pool( $pool_id );	
 
 	$UP_ssh		= $UP_config['ssh'];
 	$UP_ssh_key = $UP_config['ssh_key'];
@@ -1794,39 +1824,47 @@ print "-->";
 }
 
 function pool_table_update( $apps, $pool_id ) {
-	global $dbconn;
+	$pool_id =sanify( $pool_id );
 
-	$query = "UPDATE app_list SET current = false WHERE pool_id = ". $pool_id;
-	$results = pg_query( $dbconn, $query );
+	#$query = "UPDATE app_list SET current = false WHERE pool_id = ". $pool_id;
+	$query = "UPDATE app_list SET current = false WHERE pool_id = ?";
+	$result = db_query( $query, array($pool_id) );
 
 
 	foreach( $apps as $app ) {
 
 		$q1 = "SELECT nextval('app_seq_id')";
-		$results = pg_query( $dbconn, $q1 );
-		$arr     = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
+        $arr = db_query( $q1, array() );
 		$app_id = $arr['nextval'];
 
 		
-		$query = "INSERT INTO app_list (app_id, app_name, app_script, pool_id, ncpus, memory, wall_time, current ) VALUES ( ". $app_id .", '" . $app['description'] . "' , '" . $app['script']. "' , " . $pool_id . ", " . $app['ncpus']. ", " . $app['memory'] .  ", " . $app['walltime'].", true );";
+		#$query = "INSERT INTO app_list (app_id, app_name, app_script, pool_id, ncpus, memory, wall_time, current ) VALUES ( ". $app_id .", '" . $app['description'] . "' , '" . $app['script']. "' , " . $pool_id . ", " . $app['ncpus']. ", " . $app['memory'] .  ", " . $app['walltime'].", true );";
+		$query = "INSERT INTO app_list (app_id, app_name, app_script, pool_id, ncpus, memory, wall_time, current ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ? )";
 
-		$results = pg_query( $dbconn, $query );
+        $result = db_query( $query, array($app_id, $app['description'],
+                                    $app['script'], $pool_id, $app['ncpus'],
+                                    $app['memory'], $app['walltime'], true) );
 
 		$inputs = $app['inputs'];
 
 		foreach( $inputs as $input ) {
-			$query = "INSERT INTO app_input ( app_id, index, description, mimetype, required ) VALUES ( " . $app_id .", ". $input['index'] . ", '" . $input['description'] ."', '". $input['mimetype']."', ". $input['required'] .")";
+			#$query = "INSERT INTO app_input ( app_id, index, description, mimetype, required ) VALUES ( " . $app_id .", ". $input['index'] . ", '" . $input['description'] ."', '". $input['mimetype']."', ". $input['required'] .")";
+			$query = "INSERT INTO app_input ( app_id, index, description, mimetype, required ) VALUES ( ?, ?, ?, ?, ? )";
 
-			$results = pg_query( $dbconn, $query );
+            $result = db_query( $query, array($app_id, $input['index'],
+                                        $input['description'], $input['mimetype'],
+                                        $input['required']) );
 
 		}
 
 		$outputs = $app['outputs'];
 
 		foreach( $outputs as $output ) {
-			$query = "INSERT INTO app_output ( app_id, index, description, mimetype, filename ) VALUES ( " . $app_id .", ". $output['index'] . ", '" . $output['description'] ."', '". $output['mimetype']."', '" . $output['filename']."')";
-
-			$results = pg_query( $dbconn, $query );
+			#$query = "INSERT INTO app_output ( app_id, index, description, mimetype, filename ) VALUES ( " . $app_id .", ". $output['index'] . ", '" . $output['description'] ."', '". $output['mimetype']."', '" . $output['filename']."')";
+			$query = "INSERT INTO app_output ( app_id, index, description, mimetype, filename ) VALUES ( ?, ?, ?, ?, ? )";
+            $result = db_query( $query, array($app_id, $output['index'],
+                                        $output['description'], $output['mimetype'],
+                                        $output['filename']) );
 		}
 	} 
 	
@@ -1944,11 +1982,11 @@ function pool_xml_parse( $arr ) {
 }
 
 function get_script_for_app_id( $app_id ) {
-	global $dbconn;
-	$query = "SELECT app_script FROM app_list WHERE app_id = ".sanify($app_id );
+    $app_id = sanify($app_id );
+	#$query = "SELECT app_script FROM app_list WHERE app_id = ".sanify($app_id );
+	$query = "SELECT app_script FROM app_list WHERE app_id = ?";
 
-	$results = pg_query( $dbconn, $query );
-	$arr     = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
+	$arr = db_query( $query, array($app_id) );
 
 	return $arr['app_script'];
 	
@@ -1956,7 +1994,6 @@ function get_script_for_app_id( $app_id ) {
 
 function manage_job_invocation( $uid, $app_id, $description, $project_id ) {
 	global $_FILES;
-	global $dbconn;
 
 
 	
@@ -1972,7 +2009,7 @@ function manage_job_invocation( $uid, $app_id, $description, $project_id ) {
          // copy the input files over to the staging directory
          $i=0;
 
-         $input_file_count = get_app_input_file_count( $dbconn,  $app_id );
+         $input_file_count = get_app_input_file_count( $app_id );
 
 
 			// check to see whether all mandatory input files have been specified
@@ -1988,18 +2025,18 @@ function manage_job_invocation( $uid, $app_id, $description, $project_id ) {
 			$description = sanify( $description );
 
 
-         $staging_dir = make_staging_directory( $dbconn, $app_id, $uid, $job_id );
+         $staging_dir = make_staging_directory( $app_id, $uid, $job_id );
 
-			copy_metadata_to_staging_directory( $dbconn, $app_id, $staging_dir, "project",  get_project_name( $uid, $project_id ) );
-			copy_metadata_to_staging_directory( $dbconn, $app_id, $staging_dir, "description", $description );
+			copy_metadata_to_staging_directory( $app_id, $staging_dir, "project",  get_project_name( $uid, $project_id ) );
+			copy_metadata_to_staging_directory( $app_id, $staging_dir, "description", $description );
 
 			$foaf = get_foaf( $uid );
 			if( strlen(trim($foaf)) > 0 ) {
-				copy_metadata_to_staging_directory( $dbconn, $app_id, $staging_dir, "foaf", $foaf );
+				copy_metadata_to_staging_directory( $app_id, $staging_dir, "foaf", $foaf );
 			}
 			$orcid = get_orcid( $uid );
 			if( strlen(trim($orcid)) > 0 ) {
-				copy_metadata_to_staging_directory( $dbconn, $app_id, $staging_dir, "orcid", $orcid );
+				copy_metadata_to_staging_directory( $app_id, $staging_dir, "orcid", $orcid );
 			}
 
 
@@ -2011,7 +2048,7 @@ function manage_job_invocation( $uid, $app_id, $description, $project_id ) {
          #   }
          #}
 
-         register_job_details( $dbconn, $app_id, $uid, $description, $staging_dir, $project_id, $job_id );
+         register_job_details( $app_id, $uid, $description, $staging_dir, $project_id, $job_id );
 
          for( $i=0; $i < $input_file_count; $i++ ) {
 				if( isset ($_FILES['input-'.$i ]) ) {
@@ -2019,12 +2056,12 @@ function manage_job_invocation( $uid, $app_id, $description, $project_id ) {
    	         $mime_type =  $_FILES['input-'.$i ][ 'type' ];
       	      $name      =  $_FILES['input-'.$i ][ 'name' ];
          	   $error     = $_FILES['input-'.$i ][ 'error' ];
-            	copy_file_to_staging_directory( $dbconn, $app_id, $staging_dir, $tmp_file, $i, $uid );
-	            record_input_type( $dbconn, $job_id, $name, $mime_type, $i );
+            	copy_file_to_staging_directory( $app_id, $staging_dir, $tmp_file, $i, $uid );
+	            record_input_type( $job_id, $name, $mime_type, $i );
 				}
          }
 
-         execute_job( $dbconn, $job_id, $app_id, $app, $staging_dir );
+         execute_job( $job_id, $app_id, $app, $staging_dir );
 
 			return "";
 
@@ -2036,22 +2073,23 @@ function manage_job_invocation( $uid, $app_id, $description, $project_id ) {
 }
 
 function get_pool_acl( $pool_id ) {
-	global $dbconn;
 	$pool_id = (int) sanify( $pool_id );
 
-	$query = "SELECT a.pool_id, b.username FROM acl  a full join users b on a.user_id=b.userid where a.pool_id=" . $pool_id . " or a.pool_id is NULL ORDER BY b.username ASC";
+	$query = "SELECT a.pool_id, b.username FROM acl a FULL JOIN users b ON a.user_id=b.userid WHERE" .
+                " a.pool_id = ? or a.pool_id is NULL ORDER BY b.username ASC";
 
-	$results = pg_query( $dbconn, $query );
-	$arr     = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
+	$allarr = db_query_all( $query, array($pool_id) );
 
 	$res= array();
-	while( $arr!=NULL ) {
-		$is_mem = false;
-		if ( $arr['pool_id'] == $pool_id ) { $is_mem=true; }
-		$res[] = array( 'uname' => $arr['username'] , 'member' => $is_mem );
+    if (! empty($allarr)) {
+        foreach ($allarr as $arr) {
+            $is_mem = false;
+            if ( $arr['pool_id'] == $pool_id ) { $is_mem=true; }
+            $res[] = array( 'uname' => $arr['username'] , 'member' => $is_mem );
 
-		$arr     = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
-	}
+            $arr     = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
+        }
+    }
 print_r( $res );
 	return $res;
 }
@@ -2065,19 +2103,17 @@ function check_figshare( $str ) {
 	else { return ""; }
 }
 
-function save_profile( $uid, $foafurl, $embargo, 
- $pub_dspace, $pub_chempound, $pub_figshare
- ) {
-	global $dbconn;
+function save_profile( $uid, $foafurl, $embargo, $pub_dspace, $pub_chempound,
+                        $pub_figshare) {
 
 	$foafurl = sanify( $foafurl );
 	$embargo = sanify( $embargo );
 //	$figsharekey = check_figshare( $figsharekey );
 //	$figsharesecret = check_figshare( $figsharesecret );
+	$embargo = (int) $embargo ;
 	if( $embargo < 0 )  {$embargo=0;}
 	if( $embargo > 999 ) { $embargo=999; }
 
-	$embargo = (int) $embargo ;
 
 
 		
@@ -2089,46 +2125,48 @@ function save_profile( $uid, $foafurl, $embargo,
 //print "<P>$figsharekey";
 //print "<P>$figsharesecret";
 //      pg_prepare( $dbconn, "updprof", "INSERT INTO profile ( userid, foafurl, embargo,   pub_dspace, pub_chempound, pub_figshare) VALUES ( $1, $2, $3, $4, $5, $6 )" ); 
-	$q = "INSERT INTO profile (userid ) VALUES ( ".$uid.")";
-	pg_query( $dbconn, $q );
-	pg_prepare( $dbconn, "updprof","UPDATE profile SET foafurl=$2, embargo=$3, pub_dspace=$4, pub_chempound=$5, pub_figshare=$6 WHERE userid=$1" );
-        $results = pg_execute( $dbconn, "updprof", array( 
-		$uid, $foafurl, $embargo,
-		$pub_dspace,
-		$pub_chempound,
-		$pub_figshare
-	) );
 
+	#$q = "INSERT INTO profile (userid ) VALUES ( ".$uid.")";
+	$q = "INSERT INTO profile (userid ) VALUES ( ? ) ";
+	$result = db_query( $q, array($uid) );
 
+#	pg_prepare( $dbconn, "updprof","UPDATE profile SET foafurl=$2, embargo=$3, pub_dspace=$4, pub_chempound=$5, pub_figshare=$6 WHERE userid=$1" );
+#        $results = pg_execute( $dbconn, "updprof", array( 
+#		$uid, $foafurl, $embargo,
+#		$pub_dspace,
+#		$pub_chempound,
+#		$pub_figshare
+#	) );
+	$query = "UPDATE profile SET foafurl=?, embargo=?, pub_dspace=?, pub_chempound=?, pub_figshare=? WHERE userid=?";
+    $result = db_query( $query, array( $foafurl, $embargo, $pub_dspace,
+                                $pub_chempound, $pub_figshare, $uid) );
 
 }
 
 function add_profile( $username ) {
-	global $dbconn;
-	$query = "INSERT INTO profile (userid, pub_dspace ) VALUES (" . get_uid( $username ) .", true )";
+	$uid = get_uid( $username );
+    $query = "INSERT INTO profile (userid, pub_dspace ) VALUES ( ?, true )";
 
-	   $results = pg_query( $dbconn, $query );
+	$result = db_query( $query, array($uid) );
 
 
 }
 
 function get_profile( $username ) {
-	global $dbconn;
-	$query = "SELECT * FROM users WHERE userid = " . get_uid( $username );
-   $results = pg_query( $dbconn, $query );
-   $arr     = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
+    $uid = get_uid( $username );
+
+    #$query = "SELECT * FROM users WHERE userid = " . get_uid( $username );
+    $query = "SELECT * FROM users WHERE userid = ?";
+	$arr = db_query( $query, array($uid) );
 	$orcid = $arr["orcid"];	
 
-	$query = "SELECT * FROM profile WHERE userid = " . get_uid( $username );
+	$query = "SELECT * FROM profile WHERE userid = ?";
 
-   $results = pg_query( $dbconn, $query );
-   $arr     = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
+	$arr = db_query( $query, array($uid) );
 
 	if(  $arr === NULL ) {
 #print "<-- Adding profile for user $username --> ";
 		add_profile( $username );
-   		$results = pg_query( $dbconn, $query );
-		$arr     = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
 	}
 
 	$res = array();
@@ -2146,29 +2184,33 @@ function get_profile( $username ) {
 
 
 function preview_file( $jid, $idx, $user_id ) {
-	global $dbconn;
+    $idx = sanify($idx);
 	/* first, we get the mime type of the file */
 	$app_id = get_app_id_for_job($jid);
-	$query = "SELECT mimetype FROM app_output WHERE app_id = " . $app_id . "AND index = ".sanify($idx);
+	#$query = "SELECT mimetype FROM app_output WHERE app_id = " . $app_id . "AND index = ".sanify($idx);
+	$query = "SELECT mimetype FROM app_output WHERE app_id = ? AND index = ?";
 
-  $results = pg_query( $dbconn, $query );
-  $arr     = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
+	$arr = db_query( $query, array($app_id, $idx) );
 
-echo sanify($arr['mimetype']);
+    $mimetype =  sanify($arr['mimetype']);
+    echo $mimetype;
 
 	/* get the preview template associated with this mime type */
-	$query = "SELECT template,linebreak FROM preview_templates WHERE mimetype = '" . sanify($arr['mimetype'])."'";	
-  $results = pg_query( $dbconn, $query );
-  $arr     = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
+	#$query = "SELECT template,linebreak FROM preview_templates WHERE mimetype = '" . sanify($arr['mimetype'])."'";	
+	$query = "SELECT template,linebreak FROM preview_templates WHERE mimetype = ?";
+	$arr = db_query( $query, array($mimetype) );
 
 	$template = $arr['template'];
 	$linebreak = $arr['linebreak' ];
 
-	if ($template==NULL ) { $template="default"; $linebreak='<BR>'; }
+	if ($template==NULL ) {
+        $template="default";
+        $linebreak='<BR>';
+    }
 
 	/* next, we transfer the contents of the file */
 
-	$output = return_job_output_file_str( $app_id, $jid, $idx, $user_id );
+	$output = return_job_output_file_str( $app_id, $jid, $idx );
 
 #echo "$template";
 #echo "<!--";
@@ -2180,13 +2222,12 @@ echo sanify($arr['mimetype']);
 }
 
 function return_job_output_file_str( $app_id, $jid, $idx , $user_id ) {
-
-	global $dbconn;
 	global $UP_config;
 
-	$query ="SELECT * FROM job_list WHERE job_id = " . sanify( $jid );
-	$result = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+    $jid = sanify( $jid );
+	#$query ="SELECT * FROM job_list WHERE job_id = " . sanify( $jid );
+	$query ="SELECT * FROM job_list WHERE job_id = ?";
+	$arr = db_query( $query, array($jid) );
 
 
 	$staging_dir = $arr['staging_dir' ];
@@ -2199,11 +2240,11 @@ function return_job_output_file_str( $app_id, $jid, $idx , $user_id ) {
 	$UP_cat		       = $UP_config['cat'];
 	$UP_filetest		       = $UP_config['filetest'];
 
-	$app_user = get_app_user( $dbconn, $app_id );
-	$app_host = get_app_host( $dbconn, $app_id );
-	$app_path = get_app_path( $dbconn, $app_id );
+	$app_user = get_app_user( $app_id );
+	$app_host = get_app_host( $app_id );
+	$app_path = get_app_path( $app_id );
 
-	$key = make_key_name( $app_id );
+	$key = make_key_name_from_app ( $app_id );
 
 	$cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key . ' '. $app_user.'@'.$app_host;
 	$cmd = $cmd . ' ' . $UP_cat . ' '. $staging_dir.'/output-'. $idx;
@@ -2214,15 +2255,16 @@ function return_job_output_file_str( $app_id, $jid, $idx , $user_id ) {
 }
 
 function embargo( $username ) {
-	global $dbconn;
 	global $UP_config;
 	$username =sanify( $username );
 	$uid =  get_uid( $username );
-	
-	$query= "SELECT * FROM profile WHERE userid = ".$uid;
 
-	$result = pg_query( $dbconn, $query );
-	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+    echo "<BR> Warning: embargo not fully implemented.";
+	
+	#$query= "SELECT * FROM profile WHERE userid = ".$uid;
+	$query= "SELECT * FROM profile WHERE userid = ?";
+
+	$arr = db_query( $query, array($uid) );
 	
 	$period = $arr[ 'embargo' ];
 	if( $period <= 0 ) {
@@ -2230,19 +2272,24 @@ function embargo( $username ) {
 		return;
 	}
 
-	$query = 
-	"select app_id, job_id from job_list where  userid=".$uid." and is_published=false and deleted=false and  tried_to_publish=false and submit_time < (CURRENT_TIMESTAMP- interval '".$period." days')";
+	#$query = "select app_id, job_id from job_list where  userid=".$uid." and is_published=false and deleted=false and  tried_to_publish=false and submit_time < (CURRENT_TIMESTAMP- interval '".$period." days')";
+    $query = "SELECT app_id, job_id FROM job_list WHERE  userid = ?" .
+            " AND is_published=false AND deleted=false AND" .
+            " tried_to_publish=false AND submit_time <" .
+            " (current_timestamp - INTERVAL ? DAYS)";
 	echo "<BR>".$query;
 
-	$result = pg_query( $dbconn, $query );
-	$arr     = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+	$allarr = db_query_all( $query, array($uid, $period) );
 echo "<BR> ".$arr;
-	while( $arr!=NULL ) {
-	echo "<BR>Would publish app id ".$arr['app_id'] . " ". $arr['job_id']. " " . $uid."\n";
-		publish( $arr['app_id'], $arr['job_id'], $uid );
 
-		$arr     = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
-	}
+    if (! empty($allarr)) {
+        foreach ($allarr as $arr) {
+            echo "<BR>Would publish app id ".$arr['app_id'] . " ". $arr['job_id']. " " . $uid."\n";
+            publish( $arr['app_id'], $arr['job_id'], $uid );
+
+            $arr     = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
+        }
+    }
 
 	return;
 }
