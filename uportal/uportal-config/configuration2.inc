@@ -6,21 +6,23 @@ ini_set('error_reporting', E_ALL);
 ini_set('display_errors', 1);
 # Send errors to web error log
 ini_set('log_errors', 1);
+# Send errors to a file
+ini_set('error_log', '/opt/portal-devel/error.log');
 
 $UP_config['ldap_host'] = 'unixldap.cc.ic.ac.uk';
 $UP_config['ldap_port'] = NULL;
 $UP_config['ldap_basedn'] = array('ou=chemistry,dc=ic,dc=ac,dc=uk', 'ou=hpc,dc=ic,dc=ac,dc=uk' );
 
-$UP_config['file_location'] = '/home/simon/hpc-portal/uportal/uportal-config/password.txt';
+$UP_config['file_location'] = '/opt/portal-devel/deploy/uportal/uportal-config/password.txt';
 $UP_config['auth_methods'] = 'file';
 $UP_config['auth_type'] = 'strict';
 
-$UP_config['conn_string'] =  "host=127.0.0.1 port=5432 dbname=uportal user=uportal password=letmein";
-$UP_config['db_dbname'] =  'uportal';
+$UP_config['conn_string'] =  "host=127.0.0.1 port=5432 dbname=devel user=devel password=devel";
+$UP_config['db_dbname'] =  'devel';
 $UP_config['db_port'] =  '5432';
 $UP_config['db_host'] =  '127.0.0.1';
-$UP_config['db_user'] = 'uportal';
-$UP_config['db_password'] = 'letmein';
+$UP_config['db_user'] = 'devel';
+$UP_config['db_password'] = 'devel';
 
 
 $UP_config['ssh']        =  "/usr/bin/ssh -oConnectTimeout=10 ";
@@ -43,7 +45,7 @@ $UP_config['make_input_tar'] = 'make_tar';
 $UP_config['delete_job']    =  'delete_job';
 $UP_config['run_job']       =  'run_app';
 $UP_config['job_status']    =  'job_state';
-$UP_config['filetest']	    =  'filetest';
+$UP_config['filetest']      =  'filetest';
 $UP_config['app_config']    =  'app_configuration';
 $UP_config['pool_status']   =  'pool_status';
 
