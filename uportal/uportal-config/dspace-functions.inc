@@ -7,7 +7,7 @@ function figshare_credentials( $user_id ) {
     global $figshare_key, $figshare_secret;
 
     #pg_prepare( $dbconn, "mfn2", "SELECT figsharekey, figsharesecret FROM profile WHERE userid = $1" );
-    $query = "SELECT figsharekey, figsharesecret FROM profile WHERE userid = ?";
+    $query = "SELECT figsharekey, figsharesecret FROM profile WHERE user_id = ?";
     #SJC nonce is bug here, presumably?
     #$results = pg_execute( $dbconn, "mfn2", array( $nonce ) );
     $arr = db_query( $query, array($user_id) );
@@ -41,9 +41,9 @@ function make_figshare_nonce( $user_id ) {
     $nonce = md5( $user_id . " dfgjsgg " . time() );
 
     #pg_prepare( $dbconn, "mfn1", "UPDATE profile SET figsharekey = $2, figsharesecret = NULL where userid = $1" );
-    $query = "UPDATE profile SET figsharekey = ?, figsharesecret = NULL where userid = ?";
+    $query = "UPDATE profile SET figsharekey = ?, figsharesecret = NULL where user_id = ?";
     #$results = pg_execute( $dbconn, "mfn1", array( $user_id, $nonce) );
-	$result = db_query( $query, array($nonce, $user_id) );
+    $result = db_query( $query, array($nonce, $user_id) );
 
     return $nonce;
     
@@ -59,14 +59,14 @@ function figshare_publish( $app_id, $jid, $user_id ) {
     #pg_prepare( $dbconn, "fpq0", "SELECT figshare_is_published FROM job_list WHERE job_id = $1" );
     #$results = pg_execute( $dbconn, "fpq0", array( $jid ) );
     $query = "SELECT figshare_is_published FROM job_list WHERE job_id = ?";
-	$arr = db_query( $query, array($jid) );
+    $arr = db_query( $query, array($jid) );
 
     if ( $arr['figshare_is_published'] === true || $arr['figshare_is_published'] === 't' ) { return; }
 
     #pg_prepare( $dbconn, "fpq1", "SELECT figsharekey,figsharesecret FROM profile WHERE userid = $1" );
     #$results = pg_execute( $dbconn, "fpq1", array( $user_id) );
-    $query = "SELECT figsharekey,figsharesecret FROM profile WHERE userid = ?";
-	$arr = db_query( $query, array($user_id) );
+    $query = "SELECT figsharekey,figsharesecret FROM profile WHERE user_id = ?";
+    $arr = db_query( $query, array($user_id) );
     $tokkey     = $arr[ 'figsharekey' ];    
     $toksecret  = $arr[ 'figsharesecret' ]; 
 
@@ -79,7 +79,7 @@ function figshare_publish( $app_id, $jid, $user_id ) {
     #pg_prepare( $dbconn, "fpq2", "SELECT staging_dir FROM job_list WHERE job_id = $1" );
     #$results = pg_execute( $dbconn, "fpq2", array( $jid ) );
     $query = "SELECT staging_dir FROM job_list WHERE job_id = ?";
-	$arr = db_query( $query, array($jid) );
+    $arr = db_query( $query, array($jid) );
 
     $staging_dir = $arr['staging_dir' ];
 
@@ -134,8 +134,8 @@ function figshare_make_public( $user_id, $jid ) {
 
     #pg_prepare( $dbconn, "fpq1", "SELECT figsharekey,figsharesecret FROM profile WHERE userid = $1" );
     #$results = pg_execute( $dbconn, "fpq1", array( $user_id) );
-    $query = "SELECT figsharekey,figsharesecret FROM profile WHERE userid = ?";
-	$arr = db_query( $query, array($user_id) );
+    $query = "SELECT figsharekey,figsharesecret FROM profile WHERE user_id = ?";
+    $arr = db_query( $query, array($user_id) );
     $tokkey     = $arr[ 'figsharekey' ];    
     $toksecret  = $arr[ 'figsharesecret' ]; 
 
@@ -148,7 +148,7 @@ function figshare_make_public( $user_id, $jid ) {
     #$query = "SELECT figshare_handle FROM job_list WHERE job_id = $jid";
     #$res = pg_fetch_row(  pg_query( $query ) );
     $query = "SELECT figshare_handle FROM job_list WHERE job_id = ?";
-	$arr = db_query( $query, array($jid) );
+    $arr = db_query( $query, array($jid) );
     $fid = $arr['figshare_handle'];
 #print_r ($res);
 #print "<br> $fid";
@@ -305,8 +305,8 @@ function figshare_uploader_upload( $user_id ) {
 
     #pg_prepare( $dbconn, "fpq1", "SELECT figsharekey,figsharesecret FROM profile WHERE userid = $1" );
     #$results = pg_execute( $dbconn, "fpq1", array( $user_id) );
-    $query = "SELECT figsharekey,figsharesecret FROM profile WHERE userid = ?";
-	$arr = db_query( $query, array($user_id) );
+    $query = "SELECT figsharekey,figsharesecret FROM profile WHERE user_id = ?";
+    $arr = db_query( $query, array($user_id) );
 
     $tokkey     = $arr[ 'figsharekey' ];    
     $toksecret  = $arr[ 'figsharesecret' ]; 
@@ -408,7 +408,7 @@ print "No FIGSHARE credentials [$fskey] [$fssecret]";
             $jobid=get_next_job_id();
             $title = $_REQUEST['title'];
             #$query="INSERT INTO job_list( job_id, app_id, userid, description, staging_dir, is_published, project_id, status, figshare_is_published, figshare_handle ) VALUES ( ". $jobid .", 0 , ". $user_id . ", '" . sanify($title) . "', '0' , true, ". sanify($projectid) . ", 'C', true, '" . sanify($url) . "' )";
-            $query="INSERT INTO job_list( job_id, app_id, userid, description, staging_dir, is_published, project_id, status, figshare_is_published, figshare_handle ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )";
+            $query="INSERT INTO job_list( job_id, app_id, user_id, description, staging_dir, is_published, project_id, status, figshare_is_published, figshare_handle ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )";
     #echo $query;
             $result = db_query( $query, array($jobid, 0, $user_id, $title, 0 , true, $projectid, 'C', true, $url) );
         }

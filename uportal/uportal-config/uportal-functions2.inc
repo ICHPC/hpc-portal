@@ -81,10 +81,10 @@ function get_job_project( $jobid ) {
 
 
 function get_job_owner( $jobid ) {
-	$query="SELECT userid FROM job_list WHERE job_id = ?";
+	$query="SELECT user_id FROM job_list WHERE job_id = ?";
     $j = sanify( $jobid );
 	$arr= db_query($query, array($j));
-	return $arr['userid'];
+	return $arr['user_id'];
 }
 
 function get_job_project_name( $jobid ) {
@@ -115,7 +115,7 @@ function new_get_job_list( $user, $order, $orderdir=0, $project_id=-1, $limit=10
 
 	$orderby = array ( 'job_id' , 'a.app_id' , 'submit_time', 'wall_time',  'status', 'is_published' );
 	
-	$query = "SELECT a.*, b.app_id, b.app_name FROM job_list a, app_list b WHERE userid = ? AND deleted=false AND a.app_id = b.app_id";
+	$query = "SELECT a.*, b.app_id, b.app_name FROM job_list a, app_list b WHERE user_id = ? AND deleted=false AND a.app_id = b.app_id";
 
 	if ( $project_id > -1 ) { 
 		#$projectclause = "AND project_id = ?". (int) sanify($project_id);
@@ -359,9 +359,9 @@ function add_user( $dn ) {
 	$result = db_query( $query, array($s_dn) );
 
 
-	$query = "SELECT userid FROM users WHERE username = ?";
+	$query = "SELECT user_id FROM users WHERE username = ?";
 	$arr = db_query( $query, array($s_dn) );
-	$userid = $arr['userid'];
+	$user_id = $arr['user_id'];
 	
 	$query ="SELECT * from pools WHERE public = true";
 	$arr = db_query( $query, array() );
@@ -369,15 +369,15 @@ function add_user( $dn ) {
 	while( $arr!=NULL ) {
 		#$q2 = "INSERT INTO acl ( user_id, pool_id ) VALUES ( ".$userid.", ". $arr['pool_id'] .")";
 		$q2 = "INSERT INTO acl ( user_id, pool_id ) VALUES ( ?, ? )";
-		$result = db_query( $q2, array($userid, $arr['pool_id']) );
+		$result = db_query( $q2, array($user_id, $arr['pool_id']) );
 	}
 
-	add_profile(  $userid );
+	add_profile(  $user_id );
 }
 
 function owns_job( $uid, $jid ) {
 	#$query = "SELECT * FROM job_list WHERE userid = ".$uid." AND job_id = ".$jid;
-	$query = "SELECT * FROM job_list WHERE userid = ? AND job_id = ?";
+	$query = "SELECT * FROM job_list WHERE user_id = ? AND job_id = ?";
 	$arr = db_query( $query, array($uid, $jid) );
 	if( $arr != NULL )
     {
@@ -393,7 +393,7 @@ function owns_project( $uid , $project_id ) {
 	$project_id = (int) sanify( $project_id );
 
 	#$query = "SELECT * from projects where userid = ". $uid. " AND project_id = " .$project_id ;
-	$query = "SELECT * FROM projects WHERE userid = ? AND project_id = ?";
+	$query = "SELECT * FROM projects WHERE user_id = ? AND project_id = ?";
 
 	$arr = db_query( $query, array($uid, $project_id) );
 	
@@ -405,7 +405,7 @@ function delete_project( $uid , $project_id ) {
 	$project_id = (int) sanify( $project_id );
 
 	#$query = "DELETE FROM projects WHERE userid = ". $uid. " AND project_id = " .$project_id ;
-	$query = "DELETE FROM projects WHERE userid = ? AND project_id = ?";
+	$query = "DELETE FROM projects WHERE user_id = ? AND project_id = ?";
 	$arr = db_query( $query, array($uid, $project_id) );
 }
 	
@@ -414,7 +414,7 @@ function add_project( $uid , $description ) {
 	$description = sanify( $description );
 
 	#$query = "INSERT INTO projects ( userid, description ) VALUES ( ". $uid . " , '" . $description . "') ";
-	$query = "INSERT INTO projects ( userid, description ) VALUES ( ?, ? )";
+	$query = "INSERT INTO projects ( user_id, description ) VALUES ( ?, ? )";
 	$arr = db_query( $query, array($uid, $description) );
 }
 
@@ -435,7 +435,7 @@ function get_project_by_jid( $jid ) {
 
 function get_project_name( $uid, $project_id ) {
 	#$query = "SELECT * from projects where userid = ". (int)  sanify( $uid ) . " AND project_id = " . (int) sanify( $project_id );
-	$query = "SELECT * FROM projects WHERE userid = ? AND project_id = ?";
+	$query = "SELECT * FROM projects WHERE user_id = ? AND project_id = ?";
 
     $s_uid = sanify($uid);
     $s_project_id = (int) sanify($project_id);
@@ -452,7 +452,7 @@ function get_project_name( $uid, $project_id ) {
 function get_projects( $uid ) {
     $s_uid = sanify($uid);
 	#$query = "SELECT * FROM projects WHERE userid = ". sanify( $uid ) . "ORDER BY description ASC";
-	$query = "SELECT * FROM projects WHERE userid = ? ORDER BY description ASC";
+	$query = "SELECT * FROM projects WHERE user_id = ? ORDER BY description ASC";
 	$allarr = db_query_all( $query, array($s_uid) );
 
     $alist = array();
@@ -497,7 +497,7 @@ function app_list(   $pool_id ) {
 function get_foaf (  $uid ) {
     $uid = sanify($uid);
 
-	$query = 'SELECT foafurl FROM profile WHERE userid = ?';
+	$query = 'SELECT foafurl FROM profile WHERE user_id = ?';
 	$arr = db_query( $query, array($uid) );
 
 	return $arr[ 'foafurl' ];
@@ -506,7 +506,7 @@ function get_foaf (  $uid ) {
 function get_orcid (  $uid ) {
     $uid = sanify($uid);
 
-	$query = 'SELECT orcid FROM users WHERE userid = ?';
+	$query = 'SELECT orcid FROM users WHERE user_id = ?';
 	$arr = db_query( $query, array($uid) );
 
 	return $arr[ 'orcid' ];
@@ -518,10 +518,10 @@ function get_uid (  $uname ) {
     $uname = sanify($uname);
     # SJC should be = not ~* ?
 	#$query = 'SELECT userid FROM users WHERE username ~* \'' . sanify($uname) .'\'' ;
-	$query = 'SELECT userid FROM users WHERE username = ?';
+	$query = 'SELECT user_id FROM users WHERE username = ?';
 	$arr  = db_query( $query, array($uname) );
 
-	return $arr[ 'userid' ];
+	return $arr[ 'user_id' ];
 }
 
 function list_input_files( $app_type ) {
@@ -943,7 +943,7 @@ function validate_app_type( $uid, $app_id ) {
 	$uid = sanify( $uid );
 	$app_id = sanify( $app_id );
 	#$query = 'SELECT * FROM app_list a, acl b WHERE  a.app_id = '. $app_id.' AND (( a.app_id = b.app_id AND  userid = '.$uid.' ))';
-	$query = 'SELECT * FROM app_list a, acl b WHERE  a.app_id = ? AND (( a.app_id = b.app_id AND  userid = ? ))';
+	$query = 'SELECT * FROM app_list a, acl b WHERE  a.app_id = ? AND (( a.app_id = b.app_id AND  user_id = ? ))';
 
 	$arr = db_query( $query, array($app_id, $uid) );
 	if( isset( $arr['app_id'] )) {
@@ -1005,7 +1005,7 @@ function app_input_file_description( $app_id ) {
 	return $d;
 }
 
-function register_job_details( $app_id, $userid, $description, $staging_dir, $project_id, $jid ) {
+function register_job_details( $app_id, $user_id, $description, $staging_dir, $project_id, $jid ) {
 #	$query = "SELECT nextval('job_seq_id' )";
 #	$result = pg_query(	$dbconn, $query );
 #	$arr = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
@@ -1021,11 +1021,11 @@ function register_job_details( $app_id, $userid, $description, $staging_dir, $pr
 
 
 	#$query = "INSERT INTO job_list ( job_id, app_id, userid,  description, staging_dir, is_published, project_id ) VALUES (" . $jid  . ", " . $app_id . ", " . $userid . ",  '" . sanify($description) . "' , '" . sanify( $staging_dir) . "', false, ". $project_id . "  )";
-	$query = "INSERT INTO job_list ( job_id, app_id, userid,  description, staging_dir, is_published, project_id ) VALUES ( ?, ?, ?, ?, ?, ?, ? )";
+	$query = "INSERT INTO job_list ( job_id, app_id, user_id,  description, staging_dir, is_published, project_id ) VALUES ( ?, ?, ?, ?, ?, ?, ? )";
 
     $s_description = sanify($description);
     $s_staging_dir = sanify($staging_dir);
-	$result = db_query( $query, array($jid, $app_id, $userid, $s_description, $s_staging_dir,
+	$result = db_query( $query, array($jid, $app_id, $user_id, $s_description, $s_staging_dir,
                                         false, $project_id) );
 
 	return $jid;
@@ -1045,7 +1045,7 @@ function check_project_owner( $uid, $project_id ) {
     $uid = sanify($uid);
 
 	#$query =" SELECT count(*) FROM projects WHERE project_id=".sanify( $project_id ). " AND userid = " . sanify($uid) ;
-	$query = "SELECT count(*) FROM projects WHERE project_id = ? AND userid = ?";
+	$query = "SELECT count(*) FROM projects WHERE project_id = ? AND user_id = ?";
 	$arr = db_query( $query, array($project_id, $uid) );
 
 	if( $arr['count'] > 0 ) {
@@ -1061,7 +1061,7 @@ function check_job_owner( $uid, $jid ) {
     $jid = sanify($jid);
     $uid = sanify($uid);
 	#$query =" SELECT count(*) FROM job_list WHERE job_id=".sanify( $jid ). " AND userid = " . sanify($uid) ;
-	$query ="SELECT count(*) FROM job_list WHERE job_id = ? AND userid = ?";
+	$query ="SELECT count(*) FROM job_list WHERE job_id = ? AND user_id = ?";
 	$arr = db_query( $query, array($jid, $uid) );
 
 
@@ -2075,7 +2075,7 @@ function manage_job_invocation( $uid, $app_id, $description, $project_id ) {
 function get_pool_acl( $pool_id ) {
 	$pool_id = (int) sanify( $pool_id );
 
-	$query = "SELECT a.pool_id, b.username FROM acl a FULL JOIN users b ON a.user_id=b.userid WHERE" .
+	$query = "SELECT a.pool_id, b.username FROM acl a FULL JOIN users b ON a.user_id=b.user_id WHERE" .
                 " a.pool_id = ? or a.pool_id is NULL ORDER BY b.username ASC";
 
 	$allarr = db_query_all( $query, array($pool_id) );
@@ -2127,7 +2127,7 @@ function save_profile( $uid, $foafurl, $embargo, $pub_dspace, $pub_chempound,
 //      pg_prepare( $dbconn, "updprof", "INSERT INTO profile ( userid, foafurl, embargo,   pub_dspace, pub_chempound, pub_figshare) VALUES ( $1, $2, $3, $4, $5, $6 )" ); 
 
 	#$q = "INSERT INTO profile (userid ) VALUES ( ".$uid.")";
-	$q = "INSERT INTO profile (userid ) VALUES ( ? ) ";
+	$q = "INSERT INTO profile (user_id ) VALUES ( ? ) ";
 	$result = db_query( $q, array($uid) );
 
 #	pg_prepare( $dbconn, "updprof","UPDATE profile SET foafurl=$2, embargo=$3, pub_dspace=$4, pub_chempound=$5, pub_figshare=$6 WHERE userid=$1" );
@@ -2137,14 +2137,14 @@ function save_profile( $uid, $foafurl, $embargo, $pub_dspace, $pub_chempound,
 #		$pub_chempound,
 #		$pub_figshare
 #	) );
-	$query = "UPDATE profile SET foafurl=?, embargo=?, pub_dspace=?, pub_chempound=?, pub_figshare=? WHERE userid=?";
+	$query = "UPDATE profile SET foafurl=?, embargo=?, pub_dspace=?, pub_chempound=?, pub_figshare=? WHERE user_id=?";
     $result = db_query( $query, array( $foafurl, $embargo, $pub_dspace,
                                 $pub_chempound, $pub_figshare, $uid) );
 
 }
 
 function add_profile( $uid ) {
-    $query = "INSERT INTO profile (userid, pub_dspace ) VALUES ( ?, true )";
+    $query = "INSERT INTO profile (user_id, pub_dspace ) VALUES ( ?, true )";
 
 	$result = db_query( $query, array($uid) );
 
@@ -2155,11 +2155,11 @@ function get_profile( $username ) {
     $uid = get_uid( $username );
 
     #$query = "SELECT * FROM users WHERE userid = " . get_uid( $username );
-    $query = "SELECT * FROM users WHERE userid = ?";
+    $query = "SELECT * FROM users WHERE user_id = ?";
 	$arr = db_query( $query, array($uid) );
 	$orcid = $arr["orcid"];	
 
-	$query = "SELECT * FROM profile WHERE userid = ?";
+	$query = "SELECT * FROM profile WHERE user_id = ?";
 
 	$arr = db_query( $query, array($uid) );
 
@@ -2256,7 +2256,7 @@ function embargo( $username ) {
     echo "<BR> Warning: embargo not fully implemented.";
 	
 	#$query= "SELECT * FROM profile WHERE userid = ".$uid;
-	$query= "SELECT * FROM profile WHERE userid = ?";
+	$query= "SELECT * FROM profile WHERE user_id = ?";
 
 	$arr = db_query( $query, array($uid) );
 	
@@ -2267,7 +2267,7 @@ function embargo( $username ) {
 	}
 
 	#$query = "select app_id, job_id from job_list where  userid=".$uid." and is_published=false and deleted=false and  tried_to_publish=false and submit_time < (CURRENT_TIMESTAMP- interval '".$period." days')";
-    $query = "SELECT app_id, job_id FROM job_list WHERE  userid = ?" .
+    $query = "SELECT app_id, job_id FROM job_list WHERE  user_id = ?" .
             " AND is_published=false AND deleted=false AND" .
             " tried_to_publish=false AND submit_time <" .
             " (current_timestamp - INTERVAL ? DAYS)";
