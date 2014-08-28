@@ -2143,8 +2143,7 @@ function save_profile( $uid, $foafurl, $embargo, $pub_dspace, $pub_chempound,
 
 }
 
-function add_profile( $username ) {
-	$uid = get_uid( $username );
+function add_profile( $uid ) {
     $query = "INSERT INTO profile (userid, pub_dspace ) VALUES ( ?, true )";
 
 	$result = db_query( $query, array($uid) );
@@ -2163,11 +2162,6 @@ function get_profile( $username ) {
 	$query = "SELECT * FROM profile WHERE userid = ?";
 
 	$arr = db_query( $query, array($uid) );
-
-	if(  $arr === NULL ) {
-#print "<-- Adding profile for user $username --> ";
-		add_profile( $username );
-	}
 
 	$res = array();
 	$res['name'] =  $_SESSION['gecos'];
