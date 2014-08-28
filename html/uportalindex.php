@@ -1,10 +1,5 @@
 <?php
 
-#$suname = 'dij05';
-#$suname =  'hbronste';
-#$suname =  'abuchard';
-#$suname =  'sdiezgon';
-
 require '../uportal/smarty/libs/Smarty.class.php';
 require '../uportal/uportal-config/uportal-functions2.inc';
 require '../uportal/uportal-config/dspace-functions.inc';
@@ -70,17 +65,6 @@ switch( $action ) {
 			$display_index = 1;
 			$processed = 1;
 		}
-
-
-if( ($suname != NULL ) && $_SESSION['username'] === 'mjharvey' ) {
-	$_SESSION['uid']= get_uid( $suname );
-	$_SESSION['username']= $suname;
-	$_SESSION['gecos']= 'Matt maquerading as ' . $_SESSION['username'];
-}
-
-
-
-
 
 
 	break;
