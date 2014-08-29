@@ -423,7 +423,7 @@ function get_project_by_jid( $jid ) {
     $query = "SELECT project_id FROM job_list WHERE job_id = ?";
 
     $s_jid = sanify($jid);
-    $arr = pg_query( $query, array($s_jid) );
+    $arr = db_query( $query, array($s_jid) );
     if($arr!=NULL ) {
         return $arr['project_id'];
     }
@@ -1087,7 +1087,7 @@ function return_job_output_file( $jid, $idx ) {
 
     #$query = "SELECT * FROM app_output WHERE app_id = ".$app_id." AND index = " . sanify( $idx);
     $query = "SELECT * FROM app_output WHERE app_id = ? AND index = ?";
-    $arr = pg_query( $query, array($app_id, $idx) );
+    $arr = db_query( $query, array($app_id, $idx) );
 
     if( !isset( $arr['app_id'] ) ) {
         echo "No such output file";
@@ -1652,7 +1652,7 @@ function owns_pool( $username, $pool_id ) {
     #$query = "SELECT owner FROM pools WHERE pool_id = " . $pool_id . " AND owner = " . $user_id;
     $query = "SELECT owner FROM pools WHERE pool_id = ? AND owner = ?";
 
-    $result = db_query( $query, array($pool_id, $user_id) );
+    $arr = db_query( $query, array($pool_id, $user_id) );
 
     if( $arr!=NULL ) {
         return true;
@@ -2087,7 +2087,6 @@ function get_pool_acl( $pool_id ) {
             if ( $arr['pool_id'] == $pool_id ) { $is_mem=true; }
             $res[] = array( 'uname' => $arr['username'] , 'member' => $is_mem );
 
-            $arr     = pg_fetch_array( $results, NULL, PGSQL_ASSOC );
         }
     }
 print_r( $res );
@@ -2280,8 +2279,6 @@ echo "<BR> ".$arr;
         foreach ($allarr as $arr) {
             echo "<BR>Would publish app id ".$arr['app_id'] . " ". $arr['job_id']. " " . $uid."\n";
             publish( $arr['app_id'], $arr['job_id'], $uid );
-
-            $arr     = pg_fetch_array( $result, NULL, PGSQL_ASSOC );
         }
     }
 
