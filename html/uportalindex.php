@@ -253,6 +253,7 @@ if(1) {
 		
 	break;
 	case 'joblist':
+        $page = 0;
 		if( !isset( $_SESSION['page'] )) { $_SESSION['page']=0; }
 
 		if( isset($_REQUEST['page']) ) { 
@@ -277,10 +278,10 @@ if(1) {
 		if( isset($_REQUEST['byproject'])){ $projectid = $_SESSION['orderby_project_id'] = $_REQUEST['byproject']; }; 
 		if( isset($_REQUEST['filter'])){ $projectid = $_SESSION['filter'] = $_REQUEST['filter']; }; 
 
-		$orderdir = $_SESSION['orderdir'];
-		$orderby  = $_SESSION['orderby'];
-		$projectid = $_SESSION['orderby_project_id']; # -1;
-		$filter    = $_SESSION['filter'];
+		$orderdir = ( isset($_SESSION['orderdir']) ? $_SESSION['orderdir'] : '' );
+		$orderby  = ( isset($_SESSION['orderby']) ? $_SESSION['orderby'] : '' );
+		$projectid = ( isset($_SESSION['orderby_project_id']) ? $_SESSION['orderby_project_id'] : '' ); # -1;
+		$filter    = ( isset($_SESSION['filter']) ? $_SESSION['filter'] : '' );
 
 		if ( empty($projectid) || !is_numeric(  $projectid )  ) { $projectid = $_SESSION['orderby_project_id'] = -1; }	
 		# untaint 
@@ -380,14 +381,16 @@ if(1) {
 				$a=app_list( $pool_id );
 				$b=get_projects( $_SESSION['uid'] );
 				if( !empty ( $a ) ) {
+                    $default_app_idx = isset($_SESSION['new_job_application']) ? $_SESSION['new_job_application'] : '';
 					$smarty->assign( "apps", $a['description'] );
 					$smarty->assign( "app_idx", $a['app_id'] );
-					$smarty->assign( "default_app_idx", $_SESSION['new_job_application'] );
+					$smarty->assign( "default_app_idx", $default_app_idx );
 				}
 				if( !empty ( $b ) ) {
+                    $default_project_idx = isset($_SESSION['new_job_project']) ? $_SESSION['new_job_project'] : '';
 					$smarty->assign( "projects", $b['description'] );
 					$smarty->assign( "project_idx", $b['project_id'] );
-					$smarty->assign( "default_project_idx", $_SESSION['new_job_project'] );
+					$smarty->assign( "default_project_idx", $default_project_idx );
 				}
 				$smarty->assign( "pool", $pool_id );
 				$smarty->display( 'selectapp.tpl');
@@ -418,10 +421,11 @@ if(1) {
 
 			case 'selectpool':
 			default:
+                $default_pool_idx = ( isset($_SESSION['new_job_pool']) ? $_SESSION['new_job_pool'] : 0 );
 				$pools = get_available_pools( $_SESSION['uid'] );
 				$smarty->assign( "pools", $pools['description'] );
 				$smarty->assign( "pool_idx", $pools['index'] );
-				$smarty->assign( "default_pool_idx", $_SESSION['new_job_pool'] );
+				$smarty->assign( "default_pool_idx", $default_pool_idx );
 				$smarty->display( 'selectpool.tpl');
 			break;
 

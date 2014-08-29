@@ -123,6 +123,15 @@ function new_get_job_list( $user, $order, $orderdir=0, $project_id=-1, $limit=10
         $values[] = (int) sanify($project_id);
     }
 
+    # SJC eh?
+    $filter = str_replace( "*", "%", $filter );
+    $filter = str_replace( "?", "%", $filter );
+    if( $filter != "" ) {
+        #$query .= " AND description ILIKE '%" . $filter ."%'";
+        $query .= " AND description ILIKE ?";
+        $values[] = "%$filter%";
+    }
+
     $query .= " ORDER BY ? ";
     if( !empty($order) && $order >=0 && $order < count($orderby) )
     {
@@ -138,15 +147,6 @@ function new_get_job_list( $user, $order, $orderdir=0, $project_id=-1, $limit=10
     } else {
         $query .=' DESC';
         $otherdir=0;
-    }
-
-    # SJC eh?
-    $filter = str_replace( "*", "%", $filter );
-    $filter = str_replace( "?", "%", $filter );
-    if( $filter != "" ) {
-        #$query .= " AND description ILIKE '%" . $filter ."%'";
-        $query .= " AND description ILIKE ?";
-        $values[] = "%$filter%";
     }
 
     $query .= " LIMIT ?";
@@ -230,11 +230,11 @@ function new_get_job_list( $user, $order, $orderdir=0, $project_id=-1, $limit=10
             $job_array[ 'input_values'] = $input_value;
 
             if( $stat[0] == 'C' ) {
-                $job_array[ 'output_files']= list_output_files( $jid, $arr['app_id'] , false ) ;
+                $job_array[ 'output_files']= list_output_files( $arr['app_id'] , false ) ;
                 $is_complete=1;
             }
             else if ($stat[0] == 'R' ) {
-                $job_array[ 'output_files'] = list_output_files( $jid, $arr['app_id'] , true )  ;
+                $job_array[ 'output_files'] = list_output_files( $arr['app_id'] , true )  ;
             }
             else {
                 $job_array[ 'output_files' ] = array() ;
@@ -313,12 +313,7 @@ function is_required_input_file( $app_id , $idx ) {
 
     $arr  = db_query( $query, array($s_app_id, $s_idx) );
 
-    if ($arr['required'] == 'f' )
-    {
-        return false;
-    } else {
-        return true;
-    }
+    return ($arr['required']);
 
 }
 
@@ -329,12 +324,7 @@ function is_admin( $user ) {
 
     $arr  = db_query( $query, array($user) );
 
-    if ($arr['is_admin'] == 'f' )
-    {
-        return false;
-    } else {
-        return true;
-    }
+    return ($arr['is_admin']);
     
 }
 
@@ -550,6 +540,8 @@ function list_output_files( $app_type , $is_running) {
     }
 
     $allarr = db_query_all( $query, array($app_type) );
+    print "query: $query\napp_type: $app_type\nlist output files:";
+    print_r($allarr);
 
     $file_list = array();
     $count=0;
@@ -1026,7 +1018,7 @@ function register_job_details( $app_id, $user_id, $description, $staging_dir, $p
     $s_description = sanify($description);
     $s_staging_dir = sanify($staging_dir);
     $result = db_query( $query, array($jid, $app_id, $user_id, $s_description, $s_staging_dir,
-                                        false, $project_id) );
+                                        0, $project_id) );
 
     return $jid;
 }
@@ -1439,11 +1431,7 @@ function is_published( $jid ) {
     $query  = "SELECT is_published FROM job_list WHERE job_id = ?";
     $arr = db_query( $query, array($jid) );
 
-    if( $arr['is_published'] == 't' ) { 
-        return true; 
-    } else { 
-        return false; 
-    }
+    return ($arr['is_published']);
 }
 
 function output_file_index_of_mimetype( $appid, $mime ) {
@@ -2015,8 +2003,12 @@ function manage_job_invocation( $uid, $app_id, $description, $project_id ) {
             // check to see whether all mandatory input files have been specified
             for( $i=0; $i< $input_file_count; $i++ ) {
                 if( is_required_input_file( $app_id, $i ) ) {
-                    if( !strcmp( $_FILES['input-'.$i]['tmp_name'], '' ) || $_FILES['input-'.$i]['error']!=0 ) {
-                        return "Required input file not specified";
+                    if( !strcmp( $_FILES['input-'.$i]['tmp_name'], '' ) ) {
+                        print_r($_FILES);
+                        return "Required input file not specified: " . $_FILES['input-'.$i]['name'];
+                    }
+                    if ($_FILES['input-'.$i]['error']!=0 ) {
+                        return "Required input file failed: " .  $_FILES['input-'.$i]['error']!=0;
                     }
                 }
             }           

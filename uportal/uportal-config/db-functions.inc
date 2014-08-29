@@ -51,7 +51,11 @@ function db_query_all($query, array $values)
         return $row;
     } catch (PDOException $e)
     {
-        print "Error: " . $e->getMessage() . "\n";
+        print "Database error: " . $e->getMessage() .
+            ", at " . $e->getLine() . " of " . $e->getFile() . "\n" .
+            "doing $query\nwith values:";
+        print_r($values);
+        print "\n";
         die();
     }
     return NULL;
