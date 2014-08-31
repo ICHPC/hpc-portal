@@ -540,8 +540,6 @@ function list_output_files( $app_type , $is_running) {
     }
 
     $allarr = db_query_all( $query, array($app_type) );
-    print "query: $query\napp_type: $app_type\nlist output files:";
-    print_r($allarr);
 
     $file_list = array();
     $count=0;
