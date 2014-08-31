@@ -1,5 +1,7 @@
 <?
 
+# Set variables that go into _REQUEST
+ini_set('variables_order', 'EGPS'); # exclude ccokies
 # Show all errors
 ini_set('error_reporting', E_ALL);
 # Display all errors in browsers
