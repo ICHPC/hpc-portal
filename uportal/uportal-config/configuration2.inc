@@ -31,7 +31,7 @@ $UP_config['ssh']        =  "/usr/bin/ssh -oConnectTimeout=10 ";
 $UP_config['ssh_key']    = "-i ";
 $UP_config['scp']        = "/usr/bin/scp ";
 
-$UP_config['ssh_keydir'] = '/var/www/uportal/uportal-config/keys/';
+$UP_config['ssh_keydir'] = '/opt/portal-devel/deploy/keys/';
 
 $UP_config['ssh-keygen'] = "/usr/bin/ssh-keygen";
 
@@ -41,7 +41,7 @@ $UP_config['cat']           = "/bin/cat";
 #$UP_config['remote_uportal_dir'] ='bin/';
 
 $UP_config['publish-figshare' ] = 'publish_figshare';
-$UP_config['publish-figshare-local' ] = '/var/www/uportal/bin/publish_figshare';
+$UP_config['publish-figshare-local' ] = '/opt/portal-devel/deploy/bin/publish_figshare';
 $UP_config['make_staging_directory'] = 'make_staging_directory';
 $UP_config['make_input_tar'] = 'make_tar';
 $UP_config['delete_job']    =  'delete_job';

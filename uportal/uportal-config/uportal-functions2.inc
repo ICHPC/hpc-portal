@@ -16,6 +16,8 @@ function authenticate($user, $password)
 # The user's fullname is taken from the first successful method.
 # A method cannot return an empty name as this is detected as an auth failure.
 #
+# Note that $user is not escaped in any way from the user's input.
+#
 # Returns the fullname if authentication was successful, NULL otherwise.
 {
     global $UP_config;
@@ -319,7 +321,6 @@ function is_required_input_file( $app_id , $idx ) {
 
 function is_admin( $user ) {
 
-    $user = sanify( $user );
     $query = "SELECT is_admin FROM users WHERE username = ?";
 
     $arr  = db_query( $query, array($user) );
@@ -379,9 +380,6 @@ function owns_job( $uid, $jid ) {
 
 
 function owns_project( $uid , $project_id ) {
-    $uid = (int) sanify( $uid );
-    $project_id = (int) sanify( $project_id );
-
     #$query = "SELECT * from projects where userid = ". $uid. " AND project_id = " .$project_id ;
     $query = "SELECT * FROM projects WHERE user_id = ? AND project_id = ?";
 
@@ -901,7 +899,6 @@ function get_app_name( $app_id ) {
 }
 
 function get_app_id_for_job( $job_id ) {
-    $job_id = sanify($job_id);
 
     #$query = "SELECT app_id FROM job_list WHERE job_id  = '". $job_id . "'";
     $query = "SELECT app_id FROM job_list WHERE job_id  = ?";
@@ -1048,8 +1045,6 @@ function check_project_owner( $uid, $project_id ) {
 
 
 function check_job_owner( $uid, $jid ) {
-    $jid = sanify($jid);
-    $uid = sanify($uid);
     #$query =" SELECT count(*) FROM job_list WHERE job_id=".sanify( $jid ). " AND userid = " . sanify($uid) ;
     $query ="SELECT count(*) FROM job_list WHERE job_id = ? AND user_id = ?";
     $arr = db_query( $query, array($jid, $uid) );
@@ -1573,7 +1568,6 @@ function has_access_to_pool( $pool_id, $user_id ) {
 }
 
 function get_available_pools( $user_id ) {
-    $user_id = sanify( $user_id );
 
     $query = "SELECT * FROM acl a JOIN pools b ON a.pool_id = b.pool_id WHERE  a.user_id = ?";
     $allarr = db_query_all( $query, array($user_id) );
