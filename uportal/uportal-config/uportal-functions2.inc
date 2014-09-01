@@ -2289,4 +2289,9 @@ function get_motd( $user ) {
     
 }
 
+function get_job_description( $jid ) {
+    $query="SELECT description FROM job_list WHERE job_id = ?";
+    $arr= db_query($query, array($jid));
+    return $arr['description'];
+}
 ?>

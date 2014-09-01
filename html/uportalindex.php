@@ -754,7 +754,7 @@ if(1) {
 
 		$app_id = get_app_id_for_job( $jid );
 		$smarty->assign( "jid", $jid );
-		$smarty->assign( "description", $description );
+		$smarty->assign( "description", get_job_description( $jid ) );
 
 		$b=get_projects( $_SESSION['uid'] );
 
