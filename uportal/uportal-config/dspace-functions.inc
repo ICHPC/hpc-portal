@@ -218,7 +218,6 @@ function chempound_publish( $app_id, $jid, $user_id ) {
     print_r( $output );
 
     if( $handle != "" ) {
-        #$query="UPDATE job_list SET chempound_is_published=true, chempound_url='" . sanify( $handle ) . "' WHERE job_id = ". sanify($jid );
         $query="UPDATE job_list SET chempound_is_published=true, chempound_url = ? WHERE job_id = ?";
         $arr = db_query( $query, array($handle, $jid) );
         $res = true;
@@ -271,13 +270,11 @@ function dspace_publish(  $app_id, $jid, $user_id ) {
 
 
     if( $handle != "" ) {
-        #$query="UPDATE job_list SET is_published=true, handle='" . sanify( $handle ) . "' WHERE job_id = ". sanify($jid );
         $query="UPDATE job_list SET is_published=true, handle=? WHERE job_id = ?";
         $result = db_query( $query, array($handle, $jid) );
         $res = true;
     }
     else {
-        #$query="UPDATE job_list SET tried_to_publish=true WHERE job_id =" .sanify($jid);
         $query="UPDATE job_list SET tried_to_publish=true WHERE job_id = ?";
         $result = db_query( $query, array($jid) );
         $res = false;
@@ -298,13 +295,11 @@ function figshare_has_credentials( $uid ) {
     return true;
 }
 
-function figshare_uploader_upload( $user_id ) {
+function figshare_uploader_upload( $user_id, $projectid ) {
     # 1. Get figshare credentials
     global $figshare_secret, $figshare_key;
     global $UP_config;
 
-    #pg_prepare( $dbconn, "fpq1", "SELECT figsharekey,figsharesecret FROM profile WHERE userid = $1" );
-    #$results = pg_execute( $dbconn, "fpq1", array( $user_id) );
     $query = "SELECT figsharekey,figsharesecret FROM profile WHERE user_id = ?";
     $arr = db_query( $query, array($user_id) );
 
@@ -316,8 +311,6 @@ print "No FIGSHARE credentials [$fskey] [$fssecret]";
         return;
     }
 
-    $projectid = sanify($_REQUEST['project']);
-    $porjectid= (int)($projectid);
     $project = get_project_name( $user_id, $projectid );
 
     $UP_publish              = $UP_config['publish-figshare-local'];
@@ -407,7 +400,6 @@ print "No FIGSHARE credentials [$fskey] [$fssecret]";
             # Add to the job list
             $jobid=get_next_job_id();
             $title = $_REQUEST['title'];
-            #$query="INSERT INTO job_list( job_id, app_id, userid, description, staging_dir, is_published, project_id, status, figshare_is_published, figshare_handle ) VALUES ( ". $jobid .", 0 , ". $user_id . ", '" . sanify($title) . "', '0' , true, ". sanify($projectid) . ", 'C', true, '" . sanify($url) . "' )";
             $query="INSERT INTO job_list( job_id, app_id, user_id, description, staging_dir, is_published, project_id, status, figshare_is_published, figshare_handle ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )";
     #echo $query;
             $result = db_query( $query, array($jobid, 0, $user_id, $title, 0 , true, $projectid, 'C', true, $url) );

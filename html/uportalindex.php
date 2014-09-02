@@ -37,8 +37,10 @@ $display_index = 0;
 switch( $action ) {
 
     case 'login':
+        # username and password passed to authenticate() unsanified
         $password = $_REQUEST['password'];
         $gecos = authenticate( $_REQUEST['username'], $password  );
+        # username now sanified
         $username = sanify( $_REQUEST['username'] );
 
         if( empty ( $gecos ) ) {
@@ -49,7 +51,7 @@ switch( $action ) {
         else {
 
             $_SESSION['username'] = $username;
-            $_SESSION['gecos'] = $gecos;
+            $_SESSION['gecos'] = sanify( $gecos );
 
             $smarty->assign( "gecos", $_SESSION['gecos'] );
 
@@ -136,7 +138,10 @@ switch( $action ) {
         switch( $subaction ) {
             case 'publish':     
             default:
-                $jid = sanify( $_REQUEST['jid' ] );
+                $jid = empty($_REQUEST['jid' ]) ? '' : (int) $_REQUEST['jid' ];
+                if ( ! $jid || !is_int( $jid ) ) {
+                    fatal_error( "Invalid job specified" );
+                }
                 $app_id = get_app_id_for_job( $jid );
                 if ( !check_job_owner( $_SESSION['uid'], $jid ) ) {
                     fatal_error( "You do not own this job" );
@@ -196,9 +201,9 @@ if(1) {
     break;
 
     case 'delete':
-        $jid = sanify( $_REQUEST['jid' ] );
-        if( empty( $jid ) || !is_numeric( $jid ) ) {
-            fatal_error( "No job identifier specified" );
+        $jid = empty($_REQUEST['jid' ]) ? '' : (int) $_REQUEST['jid' ];
+        if ( ! $jid || !is_int( $jid ) ) {
+            fatal_error( "Invalid job specified" );
         }
 
 
@@ -240,11 +245,10 @@ if(1) {
 
     break;
     case 'figsharepub':
-        $jid = sanify( $_REQUEST['jid' ] );
-        if( empty( $jid ) || !is_numeric( $jid ) ) {
-            fatal_error( "No job identifier specified" );
+        $jid = empty($_REQUEST['jid' ]) ? '' : (int) $_REQUEST['jid' ];
+        if ( ! $jid || !is_int( $jid ) ) {
+            fatal_error( "Invalid job specified" );
         }
-
 
         if ( !check_job_owner( $_SESSION['uid'], $jid ) ) {
             fatal_error( "You do not own this job" );
@@ -254,11 +258,10 @@ if(1) {
         
     break;
     case 'joblist':
-        $page = 0;
         if( !isset( $_SESSION['page'] )) { $_SESSION['page']=0; }
 
         if( isset($_REQUEST['page']) ) { 
-            $r_page = (int) sanify( $_REQUEST['page'] );
+            $r_page = sanify( $_REQUEST['page'] );
             $page = $_SESSION['page'];
             switch( $r_page ) {
                 case 'prev':
@@ -270,14 +273,15 @@ if(1) {
             }
             $_SESSION['page']= $page;   
         }
+        $page = $_SESSION['page'];
 
         switch( strtolower( sanify( $_REQUEST['subaction'] ) ) ) {
         default:
         #get a big hash containing all job states.
 
-        if( isset($_REQUEST['orderdir']) ) { $orderdir  = $_SESSION['orderdir']   = sanify( $_REQUEST['orderdir'] ); }
-        if( isset($_REQUEST['orderby']) )  { $orderby   = $_SESSION['orderby']    = sanify( $_REQUEST['orderby'] ); }
-        if( isset($_REQUEST['byproject']) ){ $projectid = $_SESSION['orderby_project_id'] = sanify( $_REQUEST['byproject'] ); } 
+        if( isset($_REQUEST['orderdir']) ) { $orderdir  = $_SESSION['orderdir']   = (int) $_REQUEST['orderdir']; }
+        if( isset($_REQUEST['orderby']) )  { $orderby   = $_SESSION['orderby']    = (int) $_REQUEST['orderby']; }
+        if( isset($_REQUEST['byproject']) ){ $projectid = $_SESSION['orderby_project_id'] = (int) $_REQUEST['byproject']; } 
         if( isset($_REQUEST['filter']) ){ $projectid = $_SESSION['filter'] = sanify( $_REQUEST['filter'] ); }
 
         $orderdir = ( isset($_SESSION['orderdir']) ? $_SESSION['orderdir'] : '' );
@@ -285,10 +289,10 @@ if(1) {
         $projectid = ( isset($_SESSION['orderby_project_id']) ? $_SESSION['orderby_project_id'] : '' ); # -1;
         $filter    = ( isset($_SESSION['filter']) ? $_SESSION['filter'] : '' );
 
-        if ( empty($projectid) || !is_numeric(  $projectid )  ) { $projectid = $_SESSION['orderby_project_id'] = -1; }  
+        if ( empty($projectid) || !is_int(  $projectid )  ) { $projectid = $_SESSION['orderby_project_id'] = -1; }  
         # untaint 
-        if( empty( $orderby ) ||  !is_numeric( $orderby  ) ) { $orderby = $_SESSION['orderby']  = 0; }
-        if( empty($orderdir)  ||  !is_numeric( $orderdir ) ) { $orderdir= $_SESSION['orderdir'] = 0; }
+        if( empty( $orderby ) ||  !is_int( $orderby  ) ) { $orderby = $_SESSION['orderby']  = 0; }
+        if( empty($orderdir)  ||  !is_int( $orderdir ) ) { $orderdir= $_SESSION['orderdir'] = 0; }
 
         $projectname = get_project_name( $_SESSION['uid'], $projectid );
         $smarty->assign( "projectname", $projectname );
@@ -335,28 +339,40 @@ if(1) {
     case 'newjob':
         $subaction = strtolower( sanify( $_REQUEST['subaction'] ) );
 
-        if( !empty ( $_REQUEST['pool'] ) ) {
-            $pool_id = (int) sanify( $_REQUEST['pool'] );
-            if(  !has_access_to_pool( $pool_id, $_SESSION['uid'] ) ) {
-                    fatal_error( "You may not access this pool" );
-            }
+        $pool_id = empty($_REQUEST['pool' ]) ? '' : (int) $_REQUEST['pool' ];
+        # we check $pool_id for emptiness below
+        if ( $pool_id && !is_int( $pool_id ) ) {
+            fatal_error( "Invalid pool specified $pool_id" );
+        }
+        if( $pool_id && !has_access_to_pool( $pool_id, $_SESSION['uid'] ) ) {
+                fatal_error( "You may not access this pool" );
         }
         if( !empty ( $_REQUEST['application'] ) ) {
-            $app_id = (int) sanify( $_REQUEST['application'] );
+            $app_id = (int) $_REQUEST['application'];
+            if ( ! $app_id || !is_int( $app_id ) ) {
+                fatal_error( "Invalid application specified" );
+            }
             if(  !app_in_pool( $pool_id, $app_id ) ) {
                     fatal_error( "You may not access this application" );
             }
             
         }
-        else { $app_id=-1; }
+        else {
+            $app_id=-1;
+        }
         if( !empty ( $_REQUEST['project'] ) ) {
-            $project = (int) sanify( $_REQUEST['project'] );
+            $project = (int) $_REQUEST['project'];
+            if ( ! $project || !is_int( $project ) ) {
+                fatal_error( "Invalid project specified" );
+            }
             if( $project!=-1 &&  !owns_project( $_SESSION['uid'], $project ) ) {
                     fatal_error( "You may not access this project" );
             }
             
         }
-        else { $project=-1; }
+        else {
+            $project=-1;
+        }
 
 
 
@@ -445,9 +461,9 @@ if(1) {
     break;
 
     case 'inputdownload':
-        $jid = $_REQUEST['jid' ];
-        if( empty( $jid ) || !is_numeric( $jid ) ) {
-            fatal_error( "No Job identifier specified" );
+        $jid = empty($_REQUEST['jid' ]) ? '' : (int) $_REQUEST['jid' ];
+        if ( ! $jid || !is_int( $jid ) ) {
+            fatal_error( "Invalid job specified" );
         }
 
 
@@ -455,8 +471,8 @@ if(1) {
             fatal_error( "You do not own this job" );
         }
 
-        $idx = sanify( $_REQUEST['inputfile'] );
-        if( !is_numeric( $idx ) ) {
+        $idx = empty($_REQUEST['inputfile' ]) ? '' : (int) $_REQUEST['inputfile' ];
+        if ( !is_int( $idx ) ) {
             fatal_error(  "File not specified" );
         }
 
@@ -484,19 +500,18 @@ if(1) {
     break;
 
     case 'outputdownload':
-        $jid = $_REQUEST['jid' ];
-        if( empty( $jid ) || !is_numeric( $jid ) ) {
-            fatal_error( "No Job identifier specified" );
+        $jid = empty($_REQUEST['jid' ]) ? '' : (int) $_REQUEST['jid' ];
+        if ( ! $jid || !is_int( $jid ) ) {
+            fatal_error( "Invalid job specified" );
         }
-
 
         if ( !check_job_owner( $_SESSION['uid'], $jid ) ) {
             fatal_error( "You do not own this job");
         }
 
-        $idx = sanify( $_REQUEST['outputfile'] );
-        if( !is_numeric( $idx ) ) {
-            fatal_error( "File not specified" );
+        $idx = empty($_REQUEST['outputfile' ]) ? '' : (int) $_REQUEST['outputfile' ];
+        if ( !is_int( $idx ) ) {
+            fatal_error(  "File not specified" );
         }
 
         switch( strtolower( sanify( $_REQUEST['subaction'] ) ) ) {
@@ -531,16 +546,21 @@ if(1) {
 
         switch( strtolower( sanify( $_REQUEST['subaction'] ) ) ) {
         case 'add':
-            if (!empty( $_REQUEST['name'] ) ){
-                add_project( $_SESSION['uid'], sanify( $_REQUEST['name'] ) );
+            $name = sanify( $_REQUEST['name'] );
+            if ( ! $name ){
+                fatal_error( 'Invalid name for project' );
             }
-
+            add_project( $_SESSION['uid'], $name );
         break;
+
         case 'delete':
-            if ( is_numeric( $_REQUEST['project_id'] )) { 
-                delete_project( $_SESSION['uid'] , sanify( $_REQUEST['project_id'] ) );
+            $project_id = empty($_REQUEST['project_id']) ? '' : (int) $_REQUEST['project_id'];
+            if ( ! $project_id || !is_int( $project_id ) ) {
+                fatal_error( "Invalid project specified" );
             }
+            delete_project( $_SESSION['uid'] , $project_id );
         break;      
+
         default:
         }
 
@@ -554,12 +574,12 @@ if(1) {
 
 
     case 'acl':
-        $pool = $_REQUEST['pool'] ? sanify( $_REQUEST['pool'] ) : '';
-        if ( $pool || !is_numeric( $pool ) ) {
-            fatal_error( "Bad pool" );
+        $pool_id = empty($_REQUEST['pool' ]) ? '' : (int) $_REQUEST['pool' ];
+        if ( ! $pool_id || !is_int( $pool_id ) ) {
+            fatal_error( "Invalid pool specified" );
         }
         
-        if( !owns_pool( $_SESSION['username'], $pool ) ) {
+        if( !owns_pool( $_SESSION['username'], $pool_id ) ) {
             fatal_error( "You do not own this pool" );
         }
 
@@ -568,9 +588,10 @@ if(1) {
             case 'set':
             break;
             default:
-            $a = get_pool_acl( $pool );
+            $a = get_pool_acl( $pool_id );
 
             $smarty->assign( "acl", $a );
+            $smarty->assign( "pool", $pool_id );
             $smarty->display( "acl.tpl" );
             exit;
         }
@@ -602,20 +623,20 @@ if(1) {
         break;      
 
         case 'list':
-            $pool = $_REQUEST['pool'] ? sanify( $_REQUEST['pool'] ) : '';
-            if ( $pool || !is_numeric( $pool ) ) {
-                fatal_error( "Bad pool" );
+            $pool_id = empty($_REQUEST['pool' ]) ? '' : (int) $_REQUEST['pool' ];
+            if ( ! $pool_id || !is_int( $pool_id ) ) {
+                fatal_error( "Invalid pool specified" );
             }
         
-            if( has_access_to_pool(  $pool, $_SESSION['uid'] ) ) {
-                $d = get_pool_applications( $pool );
+            if( has_access_to_pool(  $pool_id, $_SESSION['uid'] ) ) {
+                $d = get_pool_applications( $pool_id );
 
             
-                if( owns_pool( $_SESSION['username'], $pool ) ) {
+                if( owns_pool( $_SESSION['username'], $pool_id ) ) {
                     $smarty->assign( "mypool", true );
                 }
                 $smarty->assign( "apps", $d );
-                $smarty->assign( "pool", $pool );
+                $smarty->assign( "pool", $pool_id );
                 $smarty->display('poolapps.tpl');
                 exit;
                 
@@ -626,29 +647,29 @@ if(1) {
 
         break;
         case 'key':
-            $pool = $_REQUEST['pool'] ? sanify( $_REQUEST['pool'] ) : '';
-            if ( $pool || !is_numeric( $pool ) ) {
-                fatal_error( "Bad pool" );
+            $pool_id = empty($_REQUEST['pool' ]) ? '' : (int) $_REQUEST['pool' ];
+            if ( ! $pool_id || !is_int( $pool_id ) ) {
+                fatal_error( "Invalid pool specified" );
             }
-            if( owns_pool( $_SESSION['username'], $pool ) ) {
-                get_key( $pool );
+            if( owns_pool( $_SESSION['username'], $pool_id ) ) {
+                get_key( $pool_id );
             }
             else {
                 fatal_error( "You do not own this pool" );
             }
         break;
         case 'refresh':
-            $pool = $_REQUEST['pool'] ? sanify( $_REQUEST['pool'] ) : '';
-            if ( $pool || !is_numeric( $pool ) ) {
-                fatal_error( "Bad pool" );
+            $pool_id = empty($_REQUEST['pool' ]) ? '' : (int) $_REQUEST['pool' ];
+            if ( ! $pool_id || !is_int( $pool_id ) ) {
+                fatal_error( "Invalid pool specified" );
             }
-            if( owns_pool( $_SESSION['username'], $pool ) ) {
-                $resp = refresh_pool_applications( $pool );
+            if( owns_pool( $_SESSION['username'], $pool_id ) ) {
+                $resp = refresh_pool_applications( $pool_id );
                 if( $resp==NULL ) {
-                    $d = get_pool_applications( $pool );
+                    $d = get_pool_applications( $pool_id );
 
                     $smarty->assign( "apps", $d );
-                    $smarty->assign( "pool", $pool );
+                    $smarty->assign( "pool", $pool_id );
                     $smarty->display('poolapps.tpl');
                     exit;
                 }
@@ -663,12 +684,12 @@ if(1) {
 
         break;
         case 'delete':
-            $pool = $_REQUEST['pool'] ? sanify( $_REQUEST['pool'] ) : '';
-            if ( $pool || !is_numeric( $pool ) ) {
-                fatal_error( "Bad pool" );
+            $pool_id = empty($_REQUEST['pool' ]) ? '' : (int) $_REQUEST['pool' ];
+            if ( ! $pool_id || !is_int( $pool_id ) ) {
+                fatal_error( "Invalid pool specified" );
             }
-            if( owns_pool( $_SESSION['username'], $pool ) ) {
-                delete_pool( $_SESSION['username'], $pool );
+            if( owns_pool( $_SESSION['username'], $pool_id ) ) {
+                delete_pool( $_SESSION['username'], $pool_id );
             }
             else {
                 fatal_error( "You do not own this pool" );
@@ -678,13 +699,12 @@ if(1) {
 
         break;
         case 'status':
-
-            $pool = $_REQUEST['pool'] ? sanify( $_REQUEST['pool'] ) : '';
-            if ( $pool || !is_numeric( $pool ) ) {
-                fatal_error( "Bad pool" );
+            $pool_id = empty($_REQUEST['pool' ]) ? '' : (int) $_REQUEST['pool' ];
+            if ( ! $pool_id || !is_int( $pool_id ) ) {
+                fatal_error( "Invalid pool specified" );
             }
-            if( has_access_to_pool( $pool, $_SESSION['uid'] ) ) {
-                $arr=pool_status( $pool );
+            if( has_access_to_pool( $pool_id, $_SESSION['uid'] ) ) {
+                $arr=pool_status( $pool_id );
                 $time = date('l dS \of F Y h:i:s A');
                 $smarty->assign( "time", $time );
                 $smarty->assign( 'status', $arr );
@@ -708,7 +728,11 @@ if(1) {
         }
         else {
             if( array_key_exists( "upload", $_REQUEST ) )  {
-                figshare_uploader_upload( $_SESSION['uid'] );
+                $project = empty($_REQUEST['project']) ? '' : (int) $_REQUEST['project' ];
+                if ( ! $project || !is_int( $project ) ) {
+                    fatal_error( "Invalid project specified" );
+                }
+                figshare_uploader_upload( $_SESSION['uid'], $project );
             }
             else {
                 $b=get_projects( $_SESSION['uid'] );
@@ -749,18 +773,23 @@ if(1) {
     break;
 
     case 'editjob':
-        $jid = sanify( $_REQUEST['jid' ] );
+        $jid = empty($_REQUEST['jid' ]) ? '' : (int) $_REQUEST['jid' ];
+        if ( ! $jid || !is_int( $jid ) ) {
+            fatal_error( "Invalid job specified" );
+        }
+
         if ( !check_job_owner( $_SESSION['uid'], $jid ) ) {
             fatal_error( "You do not own this job" );
         }
 
-        $project = $_REQUEST['project'] ? sanify( $_REQUEST['project'] ) : '';
-        if( $project && is_numeric($project) ) {
-            if( !check_project_owner( $_SESSION['uid'], $project ) ) {
-                fatal_error( "You do not own this project" );
-            }
-            set_job_project( $jid, $project );
+        $project = empty($_REQUEST['project' ]) ? '' : (int) $_REQUEST['project' ];
+        if ( ! $project || !is_int( $project ) ) {
+            fatal_error( "Invalid project specified" );
         }
+        if( !check_project_owner( $_SESSION['uid'], $project ) ) {
+            fatal_error( "You do not own this project" );
+        }
+        set_job_project( $jid, $project );
 
         $app_id = get_app_id_for_job( $jid );
         $smarty->assign( "jid", $jid );
