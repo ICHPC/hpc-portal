@@ -51,11 +51,14 @@ $UP_config['filetest']      =  'filetest';
 $UP_config['app_config']    =  'app_configuration';
 $UP_config['pool_status']   =  'pool_status';
 
-#$UP_config['dspace_insert'] = "/dspace/bin/dsrun org.dspace.app.itemimport.ItemImport -w -a -e m.harvey@ic.ac.uk ";
 $UP_config['dspace_url']     = "http://scanweb.cc.ic.ac.uk:8080/dspace/handle/";
 $UP_config['dspace_importer']= "/var/www/uportal/uportal-config/bin/lniimport";
 $UP_config['chempound_importer']= "/var/www/uportal/uportal-config/bin/qc";
 
 #$UP_config['condor_status'] = "/var/condor/condor_status";
+
+$UP_config['admin_email'] = 'adminname@example.com';
+$UP_config['admin_name'] = 'Admin Name';
+$UP_config['admin_subject'] = 'Portal Mail';
 
 ?>

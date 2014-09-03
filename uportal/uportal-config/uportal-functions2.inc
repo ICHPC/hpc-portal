@@ -2111,4 +2111,10 @@ function get_job_description( $jid ) {
     $arr= db_query($query, array($jid));
     return $arr['description'];
 }
+
+function get_admin_email() {
+    global $UP_CONFIG;
+
+    return (empty($UP_CONFIG['admin_email']) ? 'admin' : $UP_CONFIG['admin_email']);
+}
 ?>

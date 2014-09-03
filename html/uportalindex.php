@@ -121,6 +121,9 @@ $smarty->assign( "menulinks", $menuitems ) ;
 if( $display_index ) {
     $smarty->assign("motd", get_motd( $_SESSION['username'] ) );
     
+    $smarty->assign( "admin_email", get_admin_email() );
+    $smarty->assign( "admin_email_subject", empty($UP_config['admin_email_subject']) ? 'portal email' : $UP_config['admin_email_subject'] );
+    $smarty->assign( "admin_name", empty($UP_config['admin_name']) ? 'the admin' : $UP_config['admin_name'] );
     $smarty->display( 'index.tpl' );
 }
 
@@ -177,24 +180,11 @@ print "<p>Chempound: $url\n";
 print "-->\n";
 if(1) {
                 if( $handle == null && $handle2 == null && $url == null ) {
-                    fatal_error( "Unable to publish. Please send the job ID to m.j.harvey@imperial.ac.uk" );
+                    fatal_error( "Unable to publish. Please send the job ID to " . get_admin_email() );
                 }
                 else {
                     header( "Location: /?action=joblist" );
                 }
-
-#               if( $handle != null  ) {
-#                   header( "Location: http://hdl.handle.net/$handle" );
-#               }
-#               else if( $handle2 != null ) {
-#                   header( "Location: http://hdl.handle.net/$handle2" );
-#               }
-#               else if ($url != null ) {
-#                   header( "Location: $url" );
-#               }
-#               else {
-#                   fatal_error( "Unable to publish. Please send the job ID to m.j.harvey@ic.ac.uk" );
-#               }
 }       
                     
         }
@@ -827,6 +817,10 @@ if(1) {
             $smarty->display('login.tpl');
         }
         else {
+            $smarty->assign("motd", get_motd( $_SESSION['username'] ) );
+            $smarty->assign( "admin_email", get_admin_email() );
+            $smarty->assign( "admin_email_subject", empty($UP_config['admin_email_subject']) ? 'portal email' : $UP_config['admin_email_subject'] );
+            $smarty->assign( "admin_name", empty($UP_config['admin_name']) ? 'the admin' : $UP_config['admin_name'] );
             $smarty->display('index.tpl');
         }
 }

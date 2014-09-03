@@ -10,7 +10,9 @@
 
 <p>Create a new job by selecting <a href="?action=newjob">new job</a> from the menu to the left. Individual jobs may be associated with a particular <a href="?action=projects">project</a>. To see all jobs, past and present, select <a href="?action=joblist">job list</a>.
 
-<p>For information, contact <a href="mailto:m.harvey@ic.ac.uk?subject=HPC Portal">M J Harvey</a>.
+{if $admin_email}
+<p>For information, contact <a href="mailto:{$admin_email}?subject={$admin_email_subject}">{$admin_name}</a>.
+{/if}
 
 
 <p> Current news for your pools:
