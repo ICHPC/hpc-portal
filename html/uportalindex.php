@@ -756,9 +756,9 @@ if(1) {
     case 'profile':
         switch( strtolower( sanify( $_REQUEST['subaction'] ) ) ) {
             case 'update':
-                $pub_dspace = array_key_exists( "pub_dspace", $_REQUEST ) ? "t" : "f";
-                $pub_chempound = array_key_exists( "pub_chempound", $_REQUEST ) ? "t" : "f" ;
-                $pub_figshare = array_key_exists( "pub_figshare", $_REQUEST ) ? "t" : "f";
+                $pub_dspace = array_key_exists( "pub_dspace", $_REQUEST ) ? 1 : 0;
+                $pub_chempound = array_key_exists( "pub_chempound", $_REQUEST ) ? 1 : 0 ;
+                $pub_figshare = array_key_exists( "pub_figshare", $_REQUEST ) ? 1 : 0;
 
 #print "<P>$pub_dspace";
 #print "<P>$pub_chempound";

@@ -1983,9 +1983,9 @@ function get_profile( $username ) {
     $res['embargo'] =  $arr['embargo'];
 //  $res['figsharekey'] =  $arr['figsharekey'];
 //  $res['figsharesecret'] =  $arr['figsharesecret'];
-    $res['pub_dspace']    = $arr['pub_dspace']    === "t" ? "checked" : "";
-    $res['pub_chempound'] = $arr['pub_chempound'] === "t" ? "checked" : "";
-    $res['pub_figshare']  = $arr['pub_figshare']  === "t" ? "checked" : "";
+    $res['pub_dspace']    = $arr['pub_dspace']    == 1 ? "checked" : "";
+    $res['pub_chempound'] = $arr['pub_chempound'] == 1 ? "checked" : "";
+    $res['pub_figshare']  = $arr['pub_figshare']  == 1 ? "checked" : "";
     return $res;
 }
 
