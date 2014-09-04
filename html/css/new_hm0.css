@@ -110,9 +110,6 @@ text-decoration: underline;
 #hmContent img{
 	padding: 0px 0px 2px 0px;
 	margin: 0px 0px 5px 0px;
-	background-image: url(http://www.imperial.ac.uk/images/images05/img_bdr.gif);
-	background-repeat: repeat;
-	background-position: bottom;
 	}	
 		
 #hmFooterSub{
@@ -163,7 +160,6 @@ text-decoration: underline;
 	padding: 0px;}    
 
 #navList li {
-	background: #DDEEFF url(http://www.imperial.ac.uk/images/images05/nav_right.gif) no-repeat left;
 	display: block;
 	border-top: 1px solid #fff;
     border-right: 1px solid #666666;
@@ -254,25 +250,6 @@ text-decoration: underline;
 	overflow: hidden;
 	margin: 0px;}
                        
-/*
-x#iconlinks li.icon1 {background: #D7D771  url("../images/images05/icons/icon1.gif") no-repeat right center;}
-x#iconlinks li.icon2 {background: #D7D771  url("../images/images05/icons/icon2.gif") no-repeat right center;}
-x#iconlinks li.icon3 {background: #D7D771  url("../images/images05/icons/icon3.gif") no-repeat right center;}
-x#iconlinks li.icon4 {background: #D7D771  url("../images/images05/icons/icon4.gif") no-repeat right center;}
-x#iconlinks li.icon5 {background: #D7D771  url("../images/images05/icons/icon5.gif") no-repeat right center;}
-x#iconlinks li.icon6 {background: #D7D771  url("../images/images05/icons/icon6.gif") no-repeat right center;}
-x#iconlinks li.icon7 {background: #D7D771  url("../images/images05/icons/icon7.gif") no-repeat right center;}
-x#iconlinks li.icon8 {background: #D7D771  url("../images/images05/icons/icon8.gif") no-repeat right center;}
-x#iconlinks li.icon9 {background: #D7D771  url("../images/images05/icons/icon9.gif") no-repeat right center;}
-x#iconlinks li.icon10 {background: #D7D771  url("../images/images05/icons/icon10.gif") no-repeat right center;}
-x#iconlinks li.icon11 {background: #D7D771  url("../images/images05/icons/icon11.gif") no-repeat right center;}
-x#iconlinks li.icon12 {background: #D7D771  url("../images/images05/icons/icon12.gif") no-repeat right center;}
-x#iconlinks li.icon13 {background: #D7D771  url("../images/images05/icons/icon13.gif") no-repeat right center;}
-x#iconlinks li.icon14 {background: #D7D771  url("../images/images05/icons/icon14.gif") no-repeat right center;}
-x#iconlinks li.icon15 {background: #D7D771  url("../images/images05/icons/icon15.gif") no-repeat right center;}
-x#iconlinks li.icon16 {background: #D7D771  url("../images/images05/icons/icon16.gif") no-repeat right center;}
-*/ 
-
 #iconlinks li a:link, #iconlinks li a:visited, #iconlinks li a:link:hover {
 	color: #000000;
 	text-decoration: none;
@@ -309,29 +286,6 @@ body #iconlinks li a:link:hover {
 
 
 
-/* old news class
-
-.news {
-	background-image:  url("../images/images05/news_bg.gif");	
-	padding: 0px;
-	border-top-color: #666666;
-	border-top-width: 1px;
-	border-top-style: solid;
-	border-bottom-color: #666666;
-	border-bottom-style: solid;
-	border-bottom-width: 1px;
-	height:auto;
-	float:left;
-	margin-bottom:10px;
-	width:100%;
-	background-color: #DDEEFF;
-	
-		
-	}        
-
- */   
-
-
   .news {            
     font-family: Verdana, Arial, Helvetica, sans-serif;
     font-weight: normal;
@@ -346,7 +300,6 @@ body #iconlinks li a:link:hover {
 	border-right-color: #666666;
 	border-bottom-color: #666666;
 	border-left-color: #666666;
-	background-image:  url(http://www.imperial.ac.uk/images/images05/news_bg.gif);
 	background-color: #99CCFF; 
     margin: 0px 0px 5px;	
 	padding: 5px;	        
@@ -359,7 +312,6 @@ body #iconlinks li a:link:hover {
 
 
 	vertical-align: top;
-	background-image: url(http://www.imperial.ac.uk/images/images05/news_bg.gif);
 	background-color: #DDEEFF;
 	padding: 5px; 
 
@@ -441,7 +393,6 @@ body #iconlinks li a:link:hover {
 .HotSpotHotSpotTableShadowFoot {	
 	font-size: 0px;
 	line-height: 2px;
-	background-image: url(http://www.imperial.ac.uk/images/images05/icon_shadow_footer.gif);
 	background-repeat: repeat-x;
 	background-position: 4px bottom;
 	border-top-width: 1px;
@@ -489,7 +440,6 @@ text-decoration:underline;
 .HotSpotTableShadow {	
     font-size: 0px;
 	line-height: 2px;
-	background-image: url(http://www.imperial.ac.uk/images/images05/icon_shadow.gif);
 	background-repeat: repeat-x;
 	background-position: 4px 2px;
 	border-top-width: 1px;

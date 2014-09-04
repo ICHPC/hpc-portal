@@ -4,7 +4,7 @@
 		<div class="spacer">&nbsp;</div>
 		<div id="footer">
 			<div class="copyright"> 
-				<b>&copy;2006-2013</b> Imperial College London	
+				<b>&copy;2006-2014</b> Imperial College London	
 			</div>
 		</div>
 	</div><!--content-->

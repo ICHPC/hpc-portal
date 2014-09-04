@@ -2,11 +2,12 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-<title>{$title}
- </title>
+<title>
+Computing Portal
+</title>
 
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-<meta name="description" content="Imperial Website" />
+<meta name="description" content="Portal Website" />
 <meta name="keywords" content="" />
 	
 <link href="css/new_hm0.css" rel="stylesheet" type="text/css" />
@@ -21,11 +22,11 @@
 
 
 
-   <link rel="shortcut icon" href="http://www.imperial.ac.uk/spectrum/images/imperial.ico" type="image/x-icon">
+   <link rel="shortcut icon" href="images/portal-icon.ico" type="image/x-icon" />
 
 	<div id="top">  
 		<div id="topleft"> 
-			<a href="http://www.imperial.ac.uk/" tabindex="1"><img alt="to Imperial College home page" src="http://www.imperial.ac.uk/images/logo.gif" width="154" height="55" id="logo"  border="0" /></a>
+			<a href="http://www.google.co.uk/" tabindex="1">Institution Home Page</a>
 	  </div>
 	  <div id="topright">
 		{if $gecos}
@@ -37,7 +38,6 @@
 
 
 	<div class="spacer"></div>
-<!--	<img  src="http://www3.imperial.ac.uk/images/ict/heading/ict_head_bg.gif" alt="Imperial College London - where science is leading" /> -->
 
 <div class="contentwrap">
 
@@ -49,8 +49,8 @@ padding: 0px;
 clear: right;
 float: left;
 background-color: ;
-background-image: url(http://www3.imperial.ac.uk/images/ict/heading/ict_head_bg.gif);">
-<div style="background-image: url(http://www3.imperial.ac.uk/images/ict/heading/ict_montage.gif);
+background-image: url(images/bg.gif);">
+<div style="background-image: url(images/tacky_compute_image.gif);
 background-repeat: no-repeat;
 background-position: right top;
 margin: 0px;
@@ -60,16 +60,15 @@ width: 100%;
 float: right;
 height: 64px;
 overflow: hidden;">
-<div class="top_heading" 
->
-<a href="http://www.imperial.ac.uk/ict"  style="color: #FFFFFF;text-decoration: none;font-weight: 600;"></a>
-</div>
 <div class="bottom_heading_notop">
 <table align="left" ><tr>
 <td class = "bottom_heading_large_notop" valign="bottom">
 </td> 
 <td class="bottom_heading_small_notop" valign="bottom">
+<!-- for example
 <a href="http://www.imperial.ac.uk/ict/services/hpc/highperformancecomputing"  style="color: #FFFFFF;text-decoration: none;">Imperial College Computing Portal</a>
+-->
+<a href=""  style="color: #FFFFFF;text-decoration: none;">Computing Portal</a>
 </td> 
 
 </tr></table>

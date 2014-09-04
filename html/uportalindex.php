@@ -12,8 +12,6 @@ $smarty->compile_check = true;
 $smarty->debugging = false;
 $smarty->force_compile = true;
 
-$smarty->assign( "title", "Imperial College High Performance Computing Service" );
-
 session_start();
 
 

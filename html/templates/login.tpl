@@ -11,7 +11,7 @@
 	{$error}
 	{/if}
 
-<form name='logindata' method='post'> <!-- action='https://sso.imperial.ac.uk/sso/auth'>-->
+<form name='logindata' method='post'>
 <input type="hidden" name="action" value="login">
 <table width='100%' border='0'>
 <tr>
@@ -38,8 +38,6 @@ Password:
 <INPUT TYPE='submit' VALUE='Login'>
 
 		
-<!--	<INPUT TYPE="button" NAME="p_request" VALUE="Home" onClick="javascript:document.location.href = 'http://www.imperial.ac.uk';">-->
-			
 	</td>
 
 </tr>
