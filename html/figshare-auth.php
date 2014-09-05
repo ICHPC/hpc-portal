@@ -13,12 +13,16 @@ require '../uportal/uportal-config/dspace-functions.inc';
 require '../uportal/uportal-config/figshareconfig.inc';
 session_start();
 
+global $UP_CONFIG;
  if( array_key_exists( 'uid', $_SESSION ) && isset( $_SESSION['uid'] ) ) {
 	$uid = $_SESSION['uid'];
 	testapiAction( make_figshare_nonce($uid) );
  }
  else {
-   header( 'Location: https://scanweb.cc.imperial.ac.uk/uportal2' );
+    $proto = $UP_CONFIG['protocol'];
+   $host  = $_SERVER['HTTP_HOST'];
+   $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
+   header("Location: $proto://$host$uri");
  }
 
 
@@ -28,14 +32,12 @@ session_start();
   {
        global $dbconn;
 	global $figshare_key, $figshare_secret;
+    global $UP_CONFIG;
 
  
 	$key = $figshare_key;
 	$secret = $figshare_secret;
 
-//    $key = 'ShakEsqAFUJVDo4T1bKHTg'; // this is your consumer key
-//    $secret = 'O93VChA6Z4sdgvg0L1MKIw'; // this is your secret
- 
     $host = 'http://api.figshare.com/v1/pbl';
  
     $request_token = $host .'/oauth/request_token';
@@ -58,15 +60,17 @@ session_start();
  
     try
     {
-      if (empty($_GET["oauth_token"]))
-      { 
-        $getAuthTokenParams = array(
-#'xoauth_displayname' => 'Imperial College High Performance Computing Service Portal', 
-             'oauth_callback' => 'https://scanweb.cc.imperial.ac.uk/uportal2/figshare-auth.php?key='.$nonce
-	); 
+        if (empty($_GET["oauth_token"]))
+        {
+            $proto = $UP_CONFIG['protocol'];
+            $host  = $_SERVER['HTTP_HOST'];
+            $uri   = $_SERVER['PHP_SELF'];
+            $getAuthTokenParams = array(
+                'oauth_callback' => "$proto://$host$uri/figshare-auth.php?key=" . $nonce,
+                );
  
-        $tokenResultParams = OAuthRequester::requestRequestToken($key, 0, $getAuthTokenParams);
-        header("Location: " . $authorize_url . "?oauth_token=" . $tokenResultParams['token']);
+            $tokenResultParams = OAuthRequester::requestRequestToken($key, 0, $getAuthTokenParams);
+            header("Location: " . $authorize_url . "?oauth_token=" . $tokenResultParams['token']);
       }
       else 
       {
@@ -90,7 +94,11 @@ session_start();
 //function set_figshare_key_secret( $nonce, $key, $secret ) {
 
 	set_figshare_key_secret( $nonce, $lalala['oauth_token'], $lalala['oauth_token_secret'] );
-   	header( 'Location: https://scanweb.cc.imperial.ac.uk/uportal2/?action=profile' );
+    $proto = $UP_CONFIG['protocol'];
+    $host  = $_SERVER['HTTP_HOST'];
+    $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
+    $extra = '?action=profile';
+    header("Location: $proto://$host$uri/$extra");
  
 #	printf("<P>NONCE: $nonce" );
 #	printf("<P>TOKEN: $oauthToken<p>SECRET: $oauthTokenSecret<P>");

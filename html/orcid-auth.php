@@ -13,8 +13,12 @@ require '../uportal/uportal-config/dspace-functions.inc';
 require '../uportal/uportal-config/orcidconfig.inc';
 
 session_start();
+
+$proto = $UP_CONFIG['protocol'];
+$host  = $_SERVER['HTTP_HOST'];
+$uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
 if( !array_key_exists( 'uid', $_SESSION ) ) {
-	header("Location: https://portal.hpc.ic.ac.uk");
+    header("Location: $proto://$host$uri");
 	exit(0);
 }
 
@@ -23,7 +27,8 @@ print_r( $_SESSION );
 
 if( !array_key_exists( 'code', $_GET ) ) {
 	$_SESSION["oauthnonce"] = md5(uniqid(rand(), true));
-	header( 'Location: https://orcid.org/oauth/authorize?client_id=' . $orcid_client_id .'&response_type=code&scope=/authenticate&redirect_uri=https://portal.hpc.ic.ac.uk/orcid-auth.php?state=' . $_SESSION["oauthnonce"] );
+    $redirect_uri = "$proto://$host$uri/orcid-auth.php?state=" . $_SESSION["oauthnonce"];
+	header( 'Location: https://orcid.org/oauth/authorize?client_id=' . $orcid_client_id .'&response_type=code&scope=/authenticate&redirect_uri=' . $redirect_uri );
 }
 else {
 //  curl -i -L -H 'Accept: application/json' --data 'client_id=0000-0001-7197-7095&client_secret=2801423d-88b0-4809-b6d8-87eede5ec00c&grant_type=authorization_code&code=MsjXNS' 'https://api.sandbox.orcid.org/oauth/token'
@@ -50,7 +55,8 @@ else {
         $results = pg_execute( $dbconn, "orcidprof", array(
     $uid, $orcid
   ) );
-		header( "Location: https://portal.hpc.ic.ac.uk/?action=profile" );
+        $extra = '?action=profile';
+		header( "Location: $proto://$host$uri/$extra" );
 	
 		}
 		else {

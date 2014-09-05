@@ -181,7 +181,11 @@ if(1) {
                     fatal_error( "Unable to publish. Please send the job ID to " . get_admin_email() );
                 }
                 else {
-                    header( "Location: /?action=joblist" );
+                    $proto = $UP_CONFIG['protocol'];
+                    $host  = $_SERVER['HTTP_HOST'];
+                    $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
+                    $extra = '?action=joblist';
+                    header("Location: $proto://$host$uri/$extra");
                 }
 }       
                     

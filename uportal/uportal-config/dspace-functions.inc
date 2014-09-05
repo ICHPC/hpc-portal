@@ -175,7 +175,11 @@ function figshare_make_public( $user_id, $jid ) {
             }
         }
 #exit;  
-header('Location: /?action=joblist');
+    $proto = $UP_CONFIG['protocol'];
+    $host  = $_SERVER['HTTP_HOST'];
+    $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
+    $extra = '?action=joblist';
+    header("Location: $proto://$host$uri/$extra");
 
     }
     
@@ -406,7 +410,11 @@ print "No FIGSHARE credentials [$fskey] [$fssecret]";
         }
     }
     
-    header('Location: /?action=joblist&orderby=0&orderdir=0&byproject='. $projectid);
+    $proto = $UP_CONFIG['protocol'];
+    $host  = $_SERVER['HTTP_HOST'];
+    $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
+    $extra = '/?action=joblist&orderby=0&orderdir=0&byproject='. $projectid;
+    header("Location: $proto://$host$uri/$extra");
 
 
 }
