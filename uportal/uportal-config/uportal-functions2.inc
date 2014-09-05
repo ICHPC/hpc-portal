@@ -101,7 +101,7 @@ function get_next_job_id() {
 
 }
 
-function new_get_job_list( $user, $order, $orderdir=0, $project_id=-1, $limit=10, $offset=0, $filter="" ) {
+function new_get_job_list( $user, $order, $limit, $orderdir=0, $project_id=-1, $offset=0, $filter="" ) {
     $uid = get_uid( $user );
     $values = array($uid);
 

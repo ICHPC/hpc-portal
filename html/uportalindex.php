@@ -211,6 +211,8 @@ if(1) {
             $orderby= $_SESSION['orderby'];
             $orderdir=$_SESSION['orderdir'];
             $projectid=$_SESSION['orderby_project_id'];
+            if( !isset( $_SESSION['items_per_page'] )) { $_SESSION['items_per_page']=10; }
+            $items_per_page = $_SESSION['items_per_page'];
 
 
             if( empty( $orderby ) || !is_numeric( $orderby )   ) { $orderby=0; }
@@ -221,7 +223,7 @@ if(1) {
             if ( $orderdir==0 ) { $orderdir=1;}
             else {$orderdir=0;}
 
-            $job_list = new_get_job_list( $_SESSION['username'] , $orderby, $orderdir, $projectid );
+            $job_list = new_get_job_list( $_SESSION['username'] , $orderby, $items_per_page, $orderdir, $projectid );
             $smarty->assign( "job_list", $job_list );
             $smarty->assign( "orderdir", $orderdir );
             $smarty->assign( "orderby", $orderby );
@@ -299,7 +301,7 @@ if(1) {
         while( sizeof($job_list) == 0 && $page>0 ) {
             $page--;
             $_SESSION['page']=$page;
-            $job_list = new_get_job_list( $_SESSION['username'] , $orderby, $orderdir, $projectid, $items_per_page, $page * $items_per_page, $filter );
+            $job_list = new_get_job_list( $_SESSION['username'] , $orderby, $items_per_page, $orderdir, $projectid, $page * $items_per_page, $filter );
         }
 
         $smarty->assign( "job_list", $job_list );
