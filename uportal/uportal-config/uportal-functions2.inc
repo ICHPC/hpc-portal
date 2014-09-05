@@ -275,6 +275,9 @@ function new_get_job_list( $user, $order, $limit, $orderdir=0, $project_id=-1, $
                     $job_array['publish'] = 'na';
                 }
             }
+            else {
+                $job_array['publish'] = '';
+            }
     #           echo "</TD>";
 
     #           echo "<TD>";

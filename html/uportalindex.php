@@ -565,6 +565,9 @@ if(1) {
                 $smarty->assign( "projects", $b['description'] );
                 $smarty->assign( "project_idx", $b['project_id'] );
             }
+            else {
+                $smart->assign( "projects", '');
+            }
             $smarty->display( "projects.tpl" );
     break;
 
@@ -843,18 +846,23 @@ function display_profile() {
 function display_pools() {
     global $smarty;
             $b = get_pools( $_SESSION['username'] );
+            $my_pool_b = false;
+            $other_pool_b = false;
             if ( !empty( $b ) ) {
                 $smarty->assign( "pools", $b );
                 
                 foreach( $b as $a ) { 
                     if($a['mine']==true) {
-                        $smarty->assign( "my_pools", true );
+                        $my_pool_b = true;
                     }
                     else {
-                        $smarty->assign( "other_pools", true );
+                        $other_pool_b = true;
                     }
                 }
             }
+            $smarty->assign( "my_pools", $my_pool_b );
+            $smarty->assign( "other_pools", $other_pool_b );
+
             $smarty->display( "poollist.tpl" );
 }
 
