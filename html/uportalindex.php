@@ -247,6 +247,7 @@ if(1) {
     break;
     case 'joblist':
         if( !isset( $_SESSION['page'] )) { $_SESSION['page']=0; }
+        if( !isset( $_SESSION['items_per_page'] )) { $_SESSION['items_per_page']=10; }
 
         if( isset($_REQUEST['page']) ) { 
             $r_page = sanify( $_REQUEST['page'] );
@@ -262,6 +263,7 @@ if(1) {
             $_SESSION['page']= $page;   
         }
         $page = $_SESSION['page'];
+        $items_per_page = $_SESSION['items_per_page'];
 
         switch( strtolower( sanify( $_REQUEST['subaction'] ) ) ) {
         default:
@@ -293,7 +295,7 @@ if(1) {
         while( sizeof($job_list) == 0 && $page>0 ) {
             $page--;
             $_SESSION['page']=$page;
-            $job_list = new_get_job_list( $_SESSION['username'] , $orderby, $orderdir, $projectid, 10, $page * 10, $filter );
+            $job_list = new_get_job_list( $_SESSION['username'] , $orderby, $orderdir, $projectid, $items_per_page, $page * $items_per_page, $filter );
         }
 
         $smarty->assign( "job_list", $job_list );
@@ -310,7 +312,7 @@ if(1) {
         }
 
         if( $page==0 ) { $smarty->assign( "suppress_prev", 1 ); };
-        if( sizeof($job_list) < 10 ) { $smarty->assign( "suppress_next", 1 ); }
+        if( sizeof($job_list) < $items_per_page ) { $smarty->assign( "suppress_next", 1 ); }
 
         $b=get_projects( $_SESSION['uid'] );
         $b['description'][] = "-- All --" ;
