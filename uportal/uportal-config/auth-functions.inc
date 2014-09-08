@@ -25,7 +25,7 @@ function ldap_authenticate( $user, $password ) {
     return NULL;
 }
 
-# Authenticate by looking in UP_config('auth_file')
+# Authenticate by looking in UP_config('file_location')
 # Lines in the file have the format:
 # user:Full Name:$salt$passwordhashinsomestandardformat
 #
@@ -63,9 +63,4 @@ function file_authenticate($user, $password)
     return NULL;
 }
 
-function SC_password_verify($password, $hash)
-{
-    if (crypt($password, $hash) == $hash) return true;
-    return false;
-}
 ?>
