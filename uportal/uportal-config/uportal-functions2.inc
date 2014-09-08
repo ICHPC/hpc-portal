@@ -1012,7 +1012,7 @@ function return_job_output_file( $jid, $idx ) {
         if( $output[0] == "0" ) {
             # return a 403
             # SJC Hmm ?
-            header("HTTP/1.0 404 Not Found");
+            header($_SERVER["SERVER_PROTOCOL"]." 404 Not Found");
             return;
         }
 
