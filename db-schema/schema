@@ -493,7 +493,7 @@ ALTER TABLE ONLY acl
 --
 
 ALTER TABLE ONLY job_list
-    ADD CONSTRAINT "$3" FOREIGN KEY (project_id) REFERENCES projects(project_id) ON UPDATE CASCADE;
+    ADD CONSTRAINT "$3" FOREIGN KEY (project_id) REFERENCES projects(project_id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --

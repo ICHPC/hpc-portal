@@ -208,32 +208,12 @@ if(1) {
             fatal_error( "Cannot delete job" );
         }
         else {
-            $orderby= $_SESSION['orderby'];
-            $orderdir=$_SESSION['orderdir'];
-            $projectid=$_SESSION['orderby_project_id'];
-            if( !isset( $_SESSION['items_per_page'] )) { $_SESSION['items_per_page']=10; }
-            $items_per_page = $_SESSION['items_per_page'];
 
-
-            if( empty( $orderby ) || !is_numeric( $orderby )   ) { $orderby=0; }
-            if( empty( $orderdir )  || !is_numeric( $orderdir )  ) { $orderdir=0; }
-            if( empty( $projectid ) || !is_numeric( $projectid ) ) { $projectid=-1; }
-        
-    
-            if ( $orderdir==0 ) { $orderdir=1;}
-            else {$orderdir=0;}
-
-            $job_list = new_get_job_list( $_SESSION['username'] , $orderby, $items_per_page, $orderdir, $projectid );
-            $smarty->assign( "job_list", $job_list );
-            $smarty->assign( "orderdir", $orderdir );
-            $smarty->assign( "orderby", $orderby );
-            $smarty->assign( "byproject", $projectid );
-
-            $b=get_projects( $_SESSION['uid'] );
-            $smarty->assign( "projects", $b['description'] );
-            $smarty->assign( "project_idx", $b['project_id'] );
-            $smarty->display('joblist.tpl');
-
+            $proto = $UP_CONFIG['protocol'];
+            $host  = $_SERVER['HTTP_HOST'];
+            $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
+            $extra = '?action=joblist';
+            header("Location: $proto://$host$uri/$extra");
             exit;
         }
 
@@ -554,6 +534,9 @@ if(1) {
             if ( ! $project_id || !is_int( $project_id ) ) {
                 fatal_error( "Invalid project specified" );
             }
+            if ( ! is_project_empty( $project_id ) ) {
+                fatal_error( "Project contains undeleted jobs" );
+            }
             delete_project( $_SESSION['uid'] , $project_id );
         break;      
 
@@ -782,13 +765,21 @@ if(1) {
         }
 
         $project = empty($_REQUEST['project' ]) ? '' : (int) $_REQUEST['project' ];
-        if ( ! $project || !is_int( $project ) ) {
-            fatal_error( "Invalid project specified" );
+        if ( $project ) {
+            if (!is_int( $project ) ) {
+                fatal_error( "Invalid project specified" );
+            }
+            if( !check_project_owner( $_SESSION['uid'], $project ) ) {
+                fatal_error( "You do not own this project" );
+            }
+            set_job_project( $jid, $project );
+            $proto = $UP_CONFIG['protocol'];
+            $host  = $_SERVER['HTTP_HOST'];
+            $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
+            $extra = '?action=joblist';
+            header("Location: $proto://$host$uri/$extra");
+            exit;
         }
-        if( !check_project_owner( $_SESSION['uid'], $project ) ) {
-            fatal_error( "You do not own this project" );
-        }
-        set_job_project( $jid, $project );
 
         $app_id = get_app_id_for_job( $jid );
         $smarty->assign( "jid", $jid );

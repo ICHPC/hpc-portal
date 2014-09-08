@@ -11,7 +11,7 @@
 
 			<h2>Change Project</h2>
 
-{$description}
+Select new project for job: &quot;{$description}&quot;
 <form>
 {if $projects} 
 <select name="project">

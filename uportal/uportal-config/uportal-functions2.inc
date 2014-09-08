@@ -2120,4 +2120,11 @@ function get_admin_email() {
 
     return (empty($UP_CONFIG['admin_email']) ? 'admin' : $UP_CONFIG['admin_email']);
 }
+
+function is_project_empty( $project_id ) {
+    $query="SELECT count(job_id) FROM job_list WHERE project_id = ? AND deleted=false";
+    $arr = db_query($query, array($project_id));
+    $cnt = $arr['count'];
+    return $cnt == 0;
+}
 ?>
