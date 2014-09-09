@@ -1932,7 +1932,6 @@ function get_pool_acl( $pool_id ) {
 
         }
     }
-print_r( $res );
     return $res;
 }
 
