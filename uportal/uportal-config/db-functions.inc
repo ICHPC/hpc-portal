@@ -9,9 +9,9 @@ function db_connect($dbuser, $dbpassword, $dbhost, $dbport, $dbname)
         $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     } catch (PDOException $e)
     {
-        print "Database error: " . $e->getMessage() .
-            ", at " . $e->getLine() . " of " . $e->getFile() . "\n" .
-        die();
+        $err = "Database connection error: " . $e->getMessage() .
+            ", at " . $e->getLine() . " of " . $e->getFile() . "\n";
+        die("$err\n");
     }
     return $db;
 }
@@ -30,12 +30,11 @@ function db_query($query, array $values)
         return $row;
     } catch (PDOException $e)
     {
-        print "Database error: " . $e->getMessage() .
+        $err = "Database error: " . $e->getMessage() .
             ", at " . $e->getLine() . " of " . $e->getFile() . "\n" .
             "doing $query\nwith values:";
-        print_r($values);
-        print "\n";
-        die();
+        $err .= print_r($values, true);
+        die("$err\n");
     }
     return NULL;
 }
