@@ -338,7 +338,7 @@ function add_user( $dn ) {
     $result = db_query( $query, array($dn) );
 
     $query = "SELECT user_id FROM users WHERE username = ?";
-    $arr = db_query( $query, array($s_dn) );
+    $arr = db_query( $query, array($dn) );
     $user_id = $arr['user_id'];
     
     $query ="SELECT * from pools WHERE public = true";
@@ -462,7 +462,7 @@ function get_foaf (  $uid ) {
 }
 
 function get_orcid (  $uid ) {
-    $query = 'SELECT orcid FROM users WHERE user_id = ?';
+    $query = 'SELECT orcid FROM profile WHERE user_id = ?';
     $arr = db_query( $query, array($uid) );
 
     return $arr[ 'orcid' ];
@@ -1966,13 +1966,8 @@ function add_profile( $uid ) {
 
 }
 
-function get_profile( $username ) {
-    $uid = get_uid( $username );
+function get_profile( $uid ) {
 
-    #$query = "SELECT * FROM users WHERE userid = " . get_uid( $username );
-    $query = "SELECT * FROM users WHERE user_id = ?";
-    $arr = db_query( $query, array($uid) );
-    $orcid = $arr["orcid"]; 
 
     $query = "SELECT * FROM profile WHERE user_id = ?";
 
@@ -1981,7 +1976,7 @@ function get_profile( $username ) {
     $res = array();
     $res['name'] =  $_SESSION['gecos'];
     $res['foaf'] =  $arr['foafurl'];
-    $res['orcid'] =  $orcid;    
+    $res['orcid'] =  $arr["orcid"];
     $res['embargo'] =  $arr['embargo'];
 //  $res['figsharekey'] =  $arr['figsharekey'];
 //  $res['figsharesecret'] =  $arr['figsharesecret'];

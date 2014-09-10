@@ -151,7 +151,7 @@ switch( $action ) {
                     fatal_error( "You cannot publish this job" );
                 }
                 
-                $profile = get_profile( $_SESSION['username'] );
+                $profile = get_profile( $_SESSION['uid'] );
 print "<!-- ";
 print( $_SESSION['username'] );
 print_r( $profile );
@@ -827,7 +827,7 @@ if(1) {
 
 function display_profile() {
     global $smarty;
-    $b = get_profile( $_SESSION['username'] );
+    $b = get_profile( $_SESSION['uid'] );
 
     
     $smarty->assign( "profile", $b );
