@@ -71,7 +71,7 @@ function figshare_publish( $app_id, $jid, $user_id ) {
     $toksecret  = $arr[ 'figsharesecret' ];
 
     if( $tokkey === "" || $toksecret === ""  || $tokkey === null || $toksecret === null ) {
-        print "<!--No FIGSHARE credentials [$tokkey] [$toksecret]-->\n";
+        print "No FIGSHARE credentials [$tokkey] [$toksecret]-->\n";
         return;
     }
 
@@ -205,9 +205,7 @@ function chempound_publish( $app_id, $jid, $user_id ) {
 
    # Now we make the temporary dspace staging directory
 
-   exec( "mktemp -d", $result );
-
-   $tmpdir = $result[0];
+    $tmpdir = tempdir();
     $tmpfile= $tmpdir."/output.log";
 
 
@@ -227,7 +225,9 @@ function chempound_publish( $app_id, $jid, $user_id ) {
         $res = true;
     }
 
-    exec( "rm -rf $tmpdir" ); # SJC fix
+    unlink( $tmpfile );
+    rmdir( $tmpdir );
+
     if( $res == true ) {
         return $handle;
     }
@@ -257,9 +257,7 @@ function dspace_publish(  $app_id, $jid, $user_id ) {
 
     # Now we make the temporary dspace staging directory
 
-    exec( "mktemp -d", $result ); # SJC fix
-
-    $tmpdir = $result[0];
+    $tmpdir = tempdir();
     $tmpfile= $tmpdir."/mets.zip";
 
 
@@ -284,7 +282,9 @@ function dspace_publish(  $app_id, $jid, $user_id ) {
         $res = false;
     }
 
-    exec( "rm -rf $tmpdir" ); # SJC fix
+    unlink( $tmpfile );
+    rmdir( $tmpdir );
+
     if( $res == true ) {
         remove_job_file( $jid, "output-".$index, $tmpfile );
         return $handle;

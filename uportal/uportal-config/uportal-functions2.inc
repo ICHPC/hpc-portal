@@ -995,7 +995,7 @@ function return_job_output_file( $jid, $idx ) {
     $UP_ssh_keydir       = $UP_config['ssh_keydir'];
     $UP_make_staging_directory      = $UP_config['make_staging_directory'];
     $UP_make_input_tar = $UP_config['make_input_tar'];
-    $UP_cat            = $UP_config['cat'];
+    $UP_remote_cat            = $UP_config['remote_cat'];
     $UP_filetest               = $UP_config['filetest'];
 
     $app_user = get_app_user( $app_id );
@@ -1017,7 +1017,7 @@ function return_job_output_file( $jid, $idx ) {
         }
 
     $cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key . ' '. $app_user.'@'.$app_host;
-    $cmd = $cmd . ' ' . $UP_cat . ' '. $staging_dir.'/output-'. $idx;
+    $cmd = $cmd . ' ' . $UP_remote_cat . ' '. $staging_dir.'/output-'. $idx;
 
 
 
@@ -1050,6 +1050,7 @@ function remove_job_file( $jid, $file, $staging_file ) {
     $UP_ssh          = $UP_config['ssh'];
     $UP_ssh_key      = $UP_config['ssh_key'];
     $UP_ssh_keydir   = $UP_config['ssh_keydir'];
+    $UP_remote_rm    = $UP_config['remote_rm'];
 
     $app_user = get_app_user( $app_id );
     $app_host = get_app_host( $app_id );
@@ -1060,7 +1061,7 @@ function remove_job_file( $jid, $file, $staging_file ) {
     //copy the remote file $file to the staging_file
 
     $cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key . ' '. $app_user.'@'.$app_host;
-    $cmd = $cmd . ' rm ' . $staging_dir.'/'.$file ;
+    $cmd = $cmd . ' '.$UP_remote_rm. ' ' . $staging_dir.'/'.$file ;
 
     echo "<!-- $cmd -->\n\n";
 
@@ -1088,7 +1089,7 @@ function copy_job_file( $jid, $file, $staging_file, $user_id ) {
     $UP_ssh_keydir   = $UP_config['ssh_keydir'];
     $UP_make_staging_directory   = $UP_config['make_staging_directory'];
     $UP_make_input_tar = $UP_config['make_input_tar'];
-    $UP_cat          = $UP_config['cat'];
+    $UP_remote_cat          = $UP_config['remote_cat'];
 
     $app_user = get_app_user( $app_id );
     $app_host = get_app_host( $app_id );
@@ -1132,7 +1133,7 @@ function return_job_input_file(  $jid, $idx , $user_id) {
     $UP_ssh_keydir = $UP_config['ssh_keydir'];
     $UP_make_staging_directory = $UP_config['make_staging_directory'];
     $UP_make_input_tar = $UP_config['make_input_tar'];
-    $UP_cat        = $UP_config['cat'];
+    $UP_remote_cat        = $UP_config['remote_cat'];
 
     $app_user = get_app_user( $app_id );
     $app_host = get_app_host( $app_id );
@@ -1143,7 +1144,7 @@ function return_job_input_file(  $jid, $idx , $user_id) {
     // call the tar script
 
     $cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key . ' '. $app_user.'@'.$app_host;
-    $cmd = $cmd . ' ' . $UP_cat . ' '. $staging_dir.'/input-'. $idx;
+    $cmd = $cmd . ' ' . $UP_remote_cat . ' '. $staging_dir.'/input-'. $idx;
 
 
     header('Content-Type: "'.$arr['mimetype'].'"');
@@ -2035,7 +2036,7 @@ function return_job_output_file_str( $app_id, $jid, $idx , $user_id ) {
     $UP_ssh_keydir       = $UP_config['ssh_keydir'];
     $UP_make_staging_directory      = $UP_config['make_staging_directory'];
     $UP_make_input_tar = $UP_config['make_input_tar'];
-    $UP_cat            = $UP_config['cat'];
+    $UP_remote_cat            = $UP_config['remote_cat'];
     $UP_filetest               = $UP_config['filetest'];
 
     $app_user = get_app_user( $app_id );
@@ -2045,7 +2046,7 @@ function return_job_output_file_str( $app_id, $jid, $idx , $user_id ) {
     $key = make_key_name_from_app ( $app_id );
 
     $cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key . ' '. $app_user.'@'.$app_host;
-    $cmd = $cmd . ' ' . $UP_cat . ' '. $staging_dir.'/output-'. $idx;
+    $cmd = $cmd . ' ' . $UP_remote_cat . ' '. $staging_dir.'/output-'. $idx;
 
     $foo= array();
     exec( $cmd,  $foo );
@@ -2121,4 +2122,18 @@ function is_project_empty( $project_id ) {
     $cnt = $arr['count'];
     return $cnt == 0;
 }
+
+function tempdir() {
+    $dir = $UP_config['tempdir'] ? $UP_config['tempdir'] : '/tmp/';
+    if (substr($dir, -1) != '/') $dir .= '/';
+
+    $prefix = 'uportal';
+    do
+    {
+      $path = $dir.$prefix.mt_rand(0, 9999999);
+    } while (!mkdir($path, 700));
+
+    return $path;
+}
+
 ?>
