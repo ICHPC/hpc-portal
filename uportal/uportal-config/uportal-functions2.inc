@@ -108,10 +108,10 @@ function new_get_job_list( $user, $order, $limit, $orderdir=0, $project_id=-1, $
     $statidx = array ('I' => 'Pending', 'R' => 'Running', 'C' => 'Finished', 'X' => 'Deleted', 'U'=>'Pending', 'H' => 'Paused', '?' => 'Not Queued', '!' => 'Failed' );
 
     $orderby = array ( 'job_id' , 'a.app_id' , 'submit_time', 'wall_time',  'status', 'is_published' );
-    
+
     $query = "SELECT a.*, b.app_id, b.app_name FROM job_list a, app_list b WHERE user_id = ? AND deleted=false AND a.app_id = b.app_id";
 
-    if ( $project_id > -1 ) { 
+    if ( $project_id > -1 ) {
         $query .= " AND project_id = ?";
         $values[] = $project_id;
     }
@@ -170,7 +170,7 @@ function new_get_job_list( $user, $order, $limit, $orderdir=0, $project_id=-1, $
 
             $stat = get_job_status( $arr['staging_dir'], $jid , $user );
 
-        
+
 
 
             $job_array[ 'app_name' ]= $arr['app_name'] ;
@@ -199,7 +199,7 @@ function new_get_job_list( $user, $order, $limit, $orderdir=0, $project_id=-1, $
                 $sec = $wall_time - $hr*3600 - $min*60;
                $wt = $hr .":".$min.":".$sec;
             }
-    
+
             $job_array['wall_time'] = $wt;
 
             $job_array['status'] = $statidx[$stat[0]] ;
@@ -257,7 +257,7 @@ function new_get_job_list( $user, $order, $limit, $orderdir=0, $project_id=-1, $
                 if( ($arr['app_id'] ==0) ||  (is_publishable(  $arr['app_id'], $jid )) ) {
                     if( is_published(  $jid ) ) {
                         $job_array['publish'] = 'view';
-                        if(( $arr['handle'] != "" )) { 
+                        if(( $arr['handle'] != "" )) {
                             $job_array['handle']  = $arr[ 'handle' ];
                         }
                         $job_array['chempound']  = $arr[ 'chempound_url' ];
@@ -287,7 +287,7 @@ function new_get_job_list( $user, $order, $limit, $orderdir=0, $project_id=-1, $
     #       echo "</TR>\n";
 
             $list[] = $job_array;
-            
+
         }
 
         return $list;
@@ -296,7 +296,7 @@ function new_get_job_list( $user, $order, $limit, $orderdir=0, $project_id=-1, $
         return null;
     }
 
-    
+
 
 
 }
@@ -317,16 +317,16 @@ function is_admin( $user ) {
     $arr  = db_query( $query, array($user) );
 
     return ($arr['is_admin']);
-    
+
 }
 
 
 function check_user_registration(  $user ) {
-    
+
     if( ! get_uid(  $user ) )  {
         add_user( $user );
         return 1;
-    }   
+    }
     return 0;
 }
 
@@ -340,7 +340,7 @@ function add_user( $dn ) {
     $query = "SELECT user_id FROM users WHERE username = ?";
     $arr = db_query( $query, array($dn) );
     $user_id = $arr['user_id'];
-    
+
     $query ="SELECT * from pools WHERE public = true";
     $arr = db_query( $query, array() );
 
@@ -371,7 +371,7 @@ function owns_project( $uid , $project_id ) {
     $query = "SELECT * FROM projects WHERE user_id = ? AND project_id = ?";
 
     $arr = db_query( $query, array($uid, $project_id) );
-    
+
     return ( $arr != NULL );
 }
 
@@ -380,7 +380,7 @@ function delete_project( $uid , $project_id ) {
     $query = "DELETE FROM projects WHERE user_id = ? AND project_id = ?";
     $arr = db_query( $query, array($uid, $project_id) );
 }
-    
+
 function add_project( $uid , $description ) {
     #$query = "INSERT INTO projects ( userid, description ) VALUES ( ". $uid . " , '" . $description . "') ";
     $query = "INSERT INTO projects ( user_id, description ) VALUES ( ?, ? )";
@@ -394,7 +394,7 @@ function get_project_by_jid( $jid ) {
     if($arr!=NULL ) {
         return $arr['project_id'];
     }
-    else { 
+    else {
         return NULL;
     }
 
@@ -408,11 +408,11 @@ function get_project_name( $uid, $project_id ) {
     if($arr!=NULL ) {
         return $arr['description'];
     }
-    else { 
+    else {
         return NULL;
     }
 }
-    
+
 function get_projects( $uid ) {
     $query = "SELECT * FROM projects WHERE user_id = ? ORDER BY description ASC";
     $allarr = db_query_all( $query, array($uid) );
@@ -423,7 +423,7 @@ function get_projects( $uid ) {
         foreach ($allarr as $arr) {
             $alist[] =  $arr['description'];
             $vlist[] = $arr['project_id'];
-        } 
+        }
     }
     if( !empty ( $alist ) ) {
         return  array( 'description' => $alist, 'project_id' => $vlist );
@@ -437,7 +437,7 @@ function app_list(   $pool_id ) {
     $query="SELECT * FROM app_list WHERE pool_id = ? AND current=true";
 
     $allarr = db_query_all( $query, array($pool_id) );
-    
+
     $alist = array();
     $vlist = array();
     if (!empty($allarr)) {
@@ -508,11 +508,11 @@ function list_output_files( $app_type , $is_running) {
     $count=0;
     if (! empty($allarr)) {
         foreach ($allarr as $arr) {
-            $file_list[$count] = $arr['description'];           
+            $file_list[$count] = $arr['description'];
             $count++;
         }
     }
-    
+
     if( $count != 0 ) {
         $file_list[-1] = 'Tarball';
 
@@ -561,7 +561,7 @@ function make_key_name_from_app( $app_id ) {
     return make_key_name_from_pool( $pool_id );
 }
 
-function make_staging_directory( $app_id, $user_id, $job_id  ){ 
+function make_staging_directory( $app_id, $user_id, $job_id  ){
     global $UP_config;
 
     $UP_ssh     = $UP_config['ssh'];
@@ -635,8 +635,8 @@ function get_job_status( $staging_dir, $job_id, $user_id ) {
     $cmd = $cmd . ' ' . $app_path.$UP_job_status . ' '. $staging_dir;
 
     $output = array ();
-    
-#print $cmd."</BR>";    
+
+#print $cmd."</BR>";
     exec( $cmd, $output );
 
 #print "TEST\n";
@@ -662,7 +662,7 @@ function get_job_status( $staging_dir, $job_id, $user_id ) {
             $ar = explode( ":", $t );
             if( $ar[1]>0 ) {
                 $wt=$ar[1];
-            }       
+            }
         }
     }
 
@@ -672,7 +672,7 @@ function get_job_status( $staging_dir, $job_id, $user_id ) {
 
     return $output;
     }
-    
+
 }
 
 function copy_metadata_to_staging_directory( $app_id, $staging_dir, $filename, $contents ) {
@@ -704,11 +704,11 @@ function copy_metadata_to_staging_directory( $app_id, $staging_dir, $filename, $
     fclose( $handle );
 
     exec( $cmd, $output );
-    
-    
+
+
     unlink( $tempfile );
 }
-  
+
 function copy_file_to_staging_directory( $app_id, $staging_dir, $file, $input_index , $user_id ) {
     global $UP_config;
 
@@ -737,8 +737,8 @@ function copy_file_to_staging_directory( $app_id, $staging_dir, $file, $input_in
 
     exec( $cmd, $output );
 #print_r($output );
-    
-    
+
+
 }
 
 function get_app_script( $app_id ) {
@@ -1041,7 +1041,7 @@ function return_job_output_file( $jid, $idx ) {
 function remove_job_file( $jid, $file, $staging_file ) {
     global $UP_config;
 
-    $query ="SELECT staging_dir, app_id FROM job_list WHERE job_id = ?"; 
+    $query ="SELECT staging_dir, app_id FROM job_list WHERE job_id = ?";
     $arr = db_query( $query, array($jid) );
 
     $staging_dir = $arr['staging_dir' ];
@@ -1214,7 +1214,7 @@ function execute_job( $job_id, $app_id, $app, $staging_dir ) {
 
     $input_file_count=1;
     $output_file_count=4;
-    $memory_requirement=1000;   
+    $memory_requirement=1000;
 
     $UP_ssh        = $UP_config['ssh'];
     $UP_ssh_key    = $UP_config['ssh_key'];
@@ -1235,7 +1235,7 @@ function execute_job( $job_id, $app_id, $app, $staging_dir ) {
     $memory_requirement = get_app_memory_requirement( $app_id );
     $cpu_requirement    = get_app_cpu_requirement( $app_id );
     $walltime           = get_app_walltime_requirement( $app_id );
-        
+
     $cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key;
     $cmd = $cmd . ' '. $app_user .'@' . $app_host;
     $cmd = $cmd . ' '. $app_path.$UP_run_job . ' '. $staging_dir . ' ' . $input_file_count . ' ' . $output_file_count . ' "' . $app_script .'" '. $memory_requirement . ' ' . $cpu_requirement  . ' ' . $walltime;
@@ -1259,7 +1259,7 @@ function delete_job( $job_id ) {
     $query = "SELECT count(*) FROM job_list WHERE job_id = ? AND deleted = false";
     $arr = db_query( $query, array($job_id) );
 
-    if( $arr['count']==0 ) { 
+    if( $arr['count']==0 ) {
         return 0;
     }
 
@@ -1277,7 +1277,7 @@ function delete_job( $job_id ) {
 #   $batch_id = $arr['batch_id'];
 #   $app_id = $arr[ 'app_id' ];
 #   $staging_dir = $arr[ 'staging_dir' ];
-#   
+#
 #   if(!isset($batch_id)) {
 #       echo "Cannot find remote job id";
 #       $batch_id = -1;
@@ -1295,7 +1295,7 @@ function delete_job( $job_id ) {
 
 
     $key = make_key_name_from_app ( $app_id );
-    
+
     $cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key;
     $cmd = $cmd . ' '. $app_user .'@' . $app_host;
     $cmd = $cmd . ' '. $app_path.$UP_delete_job . ' '. $staging_dir;
@@ -1324,7 +1324,7 @@ function output_file_index_of_mimetype( $appid, $mime ) {
     }
     else {
         return $arr['index'];
-    }   
+    }
 }
 
 function has_output_file_of_mimetype(  $appid, $mime ) {
@@ -1338,7 +1338,7 @@ function has_output_file_of_mimetype(  $appid, $mime ) {
     }
     else {
         return true;
-    }   
+    }
 }
 
 function is_publishable( $appid, $jid ) {
@@ -1356,7 +1356,7 @@ function pool_motd( $pool_id) {
 
     # call app_config on the remote host
 
-    $key = make_key_name_from_pool( $pool_id ); 
+    $key = make_key_name_from_pool( $pool_id );
 
     $UP_ssh     = $UP_config['ssh'];
     $UP_ssh_key = $UP_config['ssh_key'];
@@ -1385,7 +1385,7 @@ function pool_status( $pool_id) {
 
     # call app_config on the remote host
 
-    $key = make_key_name_from_pool( $pool_id ); 
+    $key = make_key_name_from_pool( $pool_id );
 
     $UP_ssh     = $UP_config['ssh'];
     $UP_ssh_key = $UP_config['ssh_key'];
@@ -1406,7 +1406,7 @@ function pool_status( $pool_id) {
     # $output should now contain an XML doc describing thte applications
     # print_r( $output );
 
-    $xml = implode( "\n", $output );    
+    $xml = implode( "\n", $output );
 
 
 
@@ -1414,7 +1414,7 @@ function pool_status( $pool_id) {
 
     if( is_array( $apps ) ) {
         return $apps;
-        
+
     }
     else {
         return NULL;
@@ -1430,7 +1430,7 @@ function app_in_pool( $pool_id, $app_id ) {
     $arr = db_query( $query, array($pool_id, $app_id) );
 
     return ( $arr!=NULL );
-    
+
 }
 
 function has_access_to_pool( $pool_id, $user_id ) {
@@ -1440,7 +1440,7 @@ function has_access_to_pool( $pool_id, $user_id ) {
     $arr = db_query( $query, array($user_id, $pool_id) );
 
     return ( $arr!=NULL );
-    
+
 }
 
 function get_available_pools( $user_id ) {
@@ -1457,7 +1457,7 @@ function get_available_pools( $user_id ) {
             $desc[]= $arr['description'];
         }
     }
-    
+
     return array( 'index' => $idx , 'description' => $desc );
 }
 
@@ -1467,18 +1467,18 @@ function get_pools( $user ) {
     #$query = "SELECT * FROM pools WHERE pool_id in ( SELECT pool_id from acl WHERE user_id = " . $user_id . ")";
     $query = "SELECT * FROM pools WHERE pool_id in ( SELECT pool_id from acl WHERE user_id = ? )";
     $allarr = db_query_all( $query, array($user_id) );
-    
+
     $plist = array();
 #print $query;
     if (!empty($allarr)) {
         foreach ($allarr as $arr) {
             $mine= false;
-            $foo = array( 
-                'user' => $arr['remote_user'], 
-                'host'=>$arr['remote_host'], 
-                'description' => $arr['description'], 
-                'path' => $arr['script_path'], 
-                'pool_id' => $arr['pool_id'], 
+            $foo = array(
+                'user' => $arr['remote_user'],
+                'host'=>$arr['remote_host'],
+                'description' => $arr['description'],
+                'path' => $arr['script_path'],
+                'pool_id' => $arr['pool_id'],
                 'mine' => $mine,
             );
             if( $arr['owner'] == $user_id ) { $foo['mine']=true; }
@@ -1542,7 +1542,7 @@ function add_pool( $user, $remote_user, $remote_host, $script_path, $description
     $user_id = get_uid( $user );
 
     #Special untainting
-    
+
     $remote_host = preg_replace( "/[^\w\.]/", "", $remote_host );
     $remote_user = preg_replace( "/[^\w\.]/", "", $remote_user );
     $script_path = preg_replace( "/[^\w\.\/\-\_]/", "", $script_path );
@@ -1582,7 +1582,7 @@ function get_pool_applications( $pool_id ) {
         foreach ($allarr as $arr) {
             $app_id = $arr['app_id'];
 
-            # Input 
+            # Input
             #$query2   = "SELECT * FROM app_input WHERE app_id = ". $app_id . " ORDER BY index ASC";
             $query2   = "SELECT * FROM app_input WHERE app_id = ? ORDER BY index ASC";
             $allarr2  = db_query_all( $query2, array($app_id) );
@@ -1595,7 +1595,7 @@ function get_pool_applications( $pool_id ) {
             }
 
 
-            #Output 
+            #Output
             #$query2   = "SELECT * FROM app_output WHERE app_id = ". $app_id . " ORDER BY index ASC";
             $query2   = "SELECT * FROM app_output WHERE app_id = ? ORDER BY index ASC";
             $allarr2  = db_query_all( $query2, array($app_id) );
@@ -1614,7 +1614,7 @@ function get_pool_applications( $pool_id ) {
                     'walltime' => $arr['wall_time'] );
 
             $list[] = $a;
-        }   
+        }
     }
 
     return $list;
@@ -1629,7 +1629,7 @@ function refresh_pool_applications( $pool_id ) {
 
     # call app_config on the remote host
 
-    $key = make_key_name_from_pool( $pool_id ); 
+    $key = make_key_name_from_pool( $pool_id );
 
     $UP_ssh     = $UP_config['ssh'];
     $UP_ssh_key = $UP_config['ssh_key'];
@@ -1655,7 +1655,7 @@ print "<!--";
 print_r( $output );
 print "-->";
     # $output should now contain an XML doc describing thte applications
-    $xml = implode( "\n", $output );    
+    $xml = implode( "\n", $output );
 
 
 
@@ -1663,10 +1663,10 @@ print "-->";
 
     if( ! is_array( $apps ) ) {
         return $apps;
-        
+
     }
     else {
-        pool_table_update( $apps, $pool_id ) ;  
+        pool_table_update( $apps, $pool_id ) ;
     }
 }
 
@@ -1683,7 +1683,7 @@ function pool_table_update( $apps, $pool_id ) {
         $arr = db_query( $q1, array() );
         $app_id = $arr['nextval'];
 
-        
+
         #$query = "INSERT INTO app_list (app_id, app_name, app_script, pool_id, ncpus, memory, wall_time, current ) VALUES ( ". $app_id .", '" . $app['description'] . "' , '" . $app['script']. "' , " . $pool_id . ", " . $app['ncpus']. ", " . $app['memory'] .  ", " . $app['walltime'].", true );";
         $query = "INSERT INTO app_list (app_id, app_name, app_script, pool_id, ncpus, memory, wall_time, current ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ? )";
 
@@ -1712,8 +1712,8 @@ function pool_table_update( $apps, $pool_id ) {
                                         $output['description'], $output['mimetype'],
                                         $output['filename']) );
         }
-    } 
-    
+    }
+
 }
 
 function pool_status_xml_parse( $arr ) {
@@ -1727,7 +1727,7 @@ function pool_status_xml_parse( $arr ) {
     $apps = $dom->get_elements_by_tagname('host');
 
     $error = NULL;
-    
+
     $statusx=array();
 
     foreach( $apps as $app ) {
@@ -1813,7 +1813,7 @@ function pool_xml_parse( $arr ) {
 
             $oup[] = array ( 'mimetype'=>$mimetype, 'description'=>$description, 'index'=>$index, 'filename'=>$filename );
 
-            
+
         }
 
         $app = array( 'description'=>$app_description, 'script'=>$script, 'ncpus'=>$ncpus, 'memory'=>$memory, 'inputs'=>$inp, 'outputs'=>$oup, 'walltime'=>$walltime );
@@ -1823,7 +1823,7 @@ function pool_xml_parse( $arr ) {
 
         if( !empty($error) ) { $error = "Application $name : $error"; return $error; }
     }
-    
+
     return $applist;
 }
 
@@ -1833,14 +1833,14 @@ function get_script_for_app_id( $app_id ) {
     $arr = db_query( $query, array($app_id) );
 
     return $arr['app_script'];
-    
+
 }
 
 function manage_job_invocation( $uid, $app_id, $description, $project_id ) {
     global $_FILES;
 
 
-    
+
    #// have the input files been specified? //
    #if( isset ( $_FILES['input-0'] )  ) {
 
@@ -1867,7 +1867,7 @@ function manage_job_invocation( $uid, $app_id, $description, $project_id ) {
                         return "Required input file failed: " .  $_FILES['input-'.$i]['error']!=0;
                     }
                 }
-            }           
+            }
 
          $staging_dir = make_staging_directory( $app_id, $uid, $job_id );
 
@@ -1951,7 +1951,7 @@ function save_profile( $uid, $foafurl, $embargo, $pub_dspace, $pub_chempound,
     $embargo = (int) $embargo ;
     if( $embargo < 0 )  {$embargo=0;}
     if( $embargo > 999 ) { $embargo=999; }
-        
+
     $query = "UPDATE profile SET foafurl=?, embargo=?, pub_dspace=?, pub_chempound=?, pub_figshare=? WHERE user_id=?";
     $result = db_query( $query, array( $foafurl, $embargo, $pub_dspace,
                                 $pub_chempound, $pub_figshare, $uid) );
@@ -2017,8 +2017,8 @@ function preview_file( $jid, $idx, $user_id ) {
 #echo implode( $linebreak,$output);
 #echo "-->";
 
-#   return array( $template, implode("<br>", $output) );    
-    return array( $template, implode( $linebreak, $output) );   
+#   return array( $template, implode("<br>", $output) );
+    return array( $template, implode( $linebreak, $output) );
 }
 
 function return_job_output_file_str( $app_id, $jid, $idx , $user_id ) {
@@ -2049,7 +2049,7 @@ function return_job_output_file_str( $app_id, $jid, $idx , $user_id ) {
 
     $foo= array();
     exec( $cmd,  $foo );
-    return $foo;    
+    return $foo;
 }
 
 function embargo( $username ) {
@@ -2057,12 +2057,12 @@ function embargo( $username ) {
     $uid =  get_uid( $username );
 
     echo "<BR> Warning: embargo not fully implemented.";
-    
+
     #$query= "SELECT * FROM profile WHERE userid = ".$uid;
     $query= "SELECT * FROM profile WHERE user_id = ?";
 
     $arr = db_query( $query, array($uid) );
-    
+
     $period = $arr[ 'embargo' ];
     if( $period <= 0 ) {
         echo "NO EMBARGO PERIOD SET";
@@ -2094,13 +2094,13 @@ function get_motd( $user ) {
     $motd="";
     $pools = get_pools( $user );
     $i=0;
-    foreach( $pools as $p ) { 
+    foreach( $pools as $p ) {
 #       print("<p> $i");
         $motd = $motd . pool_motd( $p['pool_id'] );
         $i++;
     }
     return $motd;
-    
+
 }
 
 function get_job_description( $jid ) {

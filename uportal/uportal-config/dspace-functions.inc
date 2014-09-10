@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 require '../uportal/uportal-config/figshareconfig.inc';
 require_once 'db-functions.inc';
@@ -17,19 +17,19 @@ function figshare_credentials( $user_id ) {
     $res[ 'consumer_secret' ] = $figshare_secret;
     $res[ 'token_key' ] = $arr['figsharekey' ];
     $res[ 'token_secret' ] = $arr['figsharesecret' ];
-        
+
     if( empty( $res[ 'token_key' ] ) || empty( $res[ 'token_secret' ] ) ) {
         return NULL;
     }
 
     return $res;
 
-    
+
 }
 
 
 function set_figshare_key_secret( $nonce, $key, $secret ) {
-    
+
     #pg_prepare( $dbconn, "mfn0", "UPDATE profile SET figsharekey = $1, figsharesecret = $2 where figsharekey = $3" );
     $query = "UPDATE profile SET figsharekey = ?, figsharesecret = ? where figsharekey = ?";
     #$results = pg_execute( $dbconn, "mfn0", array( $key, $secret, $nonce ) );
@@ -46,12 +46,12 @@ function make_figshare_nonce( $user_id ) {
     $result = db_query( $query, array($nonce, $user_id) );
 
     return $nonce;
-    
+
 }
 
 function figshare_publish( $app_id, $jid, $user_id ) {
     # This is quick and dirty. Always assume job type is 'gaussian'
-    
+
     # 1. Get figshare credentials
     global $figshare_secret, $figshare_key;
     global $UP_config;
@@ -67,14 +67,14 @@ function figshare_publish( $app_id, $jid, $user_id ) {
     #$results = pg_execute( $dbconn, "fpq1", array( $user_id) );
     $query = "SELECT figsharekey,figsharesecret FROM profile WHERE user_id = ?";
     $arr = db_query( $query, array($user_id) );
-    $tokkey     = $arr[ 'figsharekey' ];    
-    $toksecret  = $arr[ 'figsharesecret' ]; 
+    $tokkey     = $arr[ 'figsharekey' ];
+    $toksecret  = $arr[ 'figsharesecret' ];
 
     if( $tokkey === "" || $toksecret === ""  || $tokkey === null || $toksecret === null ) {
         print "<!--No FIGSHARE credentials [$tokkey] [$toksecret]-->\n";
         return;
     }
-    
+
     #2. Get job directory
     #pg_prepare( $dbconn, "fpq2", "SELECT staging_dir FROM job_list WHERE job_id = $1" );
     #$results = pg_execute( $dbconn, "fpq2", array( $jid ) );
@@ -114,9 +114,9 @@ function figshare_publish( $app_id, $jid, $user_id ) {
     if( strstr( $foo[0], "DOI:" ) != FALSE ) {
         $url = str_replace( "DOI: ", "", $foo[0] );
 
-        #pg_prepare( $dbconn, "fpq3", "UPDATE job_list SET figshare_handle=$1, figshare_is_published=true, is_published=true WHERE job_id = $2" ); 
+        #pg_prepare( $dbconn, "fpq3", "UPDATE job_list SET figshare_handle=$1, figshare_is_published=true, is_published=true WHERE job_id = $2" );
         #$results = pg_execute( $dbconn, "fpq3", array( $url, $jid ) );
-        $query = "UPDATE job_list SET figshare_handle=?, figshare_is_published=true, is_published=true WHERE job_id = ?"; 
+        $query = "UPDATE job_list SET figshare_handle=?, figshare_is_published=true, is_published=true WHERE job_id = ?";
         $arr = db_query( $query, array($url, $jid) );
         return $url;
 
@@ -124,7 +124,7 @@ function figshare_publish( $app_id, $jid, $user_id ) {
     else {
         return null;
     }
-    
+
 
 }
 
@@ -136,8 +136,8 @@ function figshare_make_public( $user_id, $jid ) {
     #$results = pg_execute( $dbconn, "fpq1", array( $user_id) );
     $query = "SELECT figsharekey,figsharesecret FROM profile WHERE user_id = ?";
     $arr = db_query( $query, array($user_id) );
-    $tokkey     = $arr[ 'figsharekey' ];    
-    $toksecret  = $arr[ 'figsharesecret' ]; 
+    $tokkey     = $arr[ 'figsharekey' ];
+    $toksecret  = $arr[ 'figsharesecret' ];
 
     if( $tokkey === "" || $toksecret === ""  || $tokkey === null || $toksecret === null ) {
         print "No FIGSHARE credentials\n"; # [$fskey] [$fssecret]";
@@ -154,9 +154,9 @@ function figshare_make_public( $user_id, $jid ) {
 #print "<br> $fid";
     if( !strstr( $fid, "figshare" ) ) {
         $cmd = "/var/www/uportal/bin/make_public.py -k ". $figshare_key . " ";
-        $cmd = $cmd . " -s " . $figshare_secret;    
-        $cmd = $cmd . " -K " . $tokkey; 
-        $cmd = $cmd . " -S " . $toksecret;  
+        $cmd = $cmd . " -s " . $figshare_secret;
+        $cmd = $cmd . " -K " . $tokkey;
+        $cmd = $cmd . " -S " . $toksecret;
         $cmd = $cmd . " -a ". $fid;
         exec( $cmd, $output );
 #       print $cmd;
@@ -167,14 +167,14 @@ function figshare_make_public( $user_id, $jid ) {
                 $url = str_replace( "DOI: ", "", $temp );
 #               printf("<a href='http://dx.doi.org/$url'>$url</a>");
 #               Add to the job list
-                #pg_prepare( $dbconn, "fmp1", "UPDATE job_list SET figshare_handle = $1 WHERE job_id = $2"); 
+                #pg_prepare( $dbconn, "fmp1", "UPDATE job_list SET figshare_handle = $1 WHERE job_id = $2");
                 #$results = pg_execute( $dbconn, "fmp1", array( $url, $jid) );
-                $query = "UPDATE job_list SET figshare_handle = ? WHERE job_id = ?"; 
+                $query = "UPDATE job_list SET figshare_handle = ? WHERE job_id = ?";
                 $arr = db_query( $query, array($url, $jid) );
 #echo $query;
             }
         }
-#exit;  
+#exit;
     $proto = $UP_CONFIG['protocol'];
     $host  = $_SERVER['HTTP_HOST'];
     $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
@@ -182,7 +182,7 @@ function figshare_make_public( $user_id, $jid ) {
     header("Location: $proto://$host$uri/$extra");
 
     }
-    
+
 }
 
 function chempound_publish( $app_id, $jid, $user_id ) {
@@ -202,7 +202,7 @@ function chempound_publish( $app_id, $jid, $user_id ) {
     $index = output_file_index_of_mimetype(  $app_id, 'chemical/x-gaussian-log' );
 
     if( $index< 0 ) { echo "No publishable content"; return; }
-    
+
    # Now we make the temporary dspace staging directory
 
    exec( "mktemp -d", $result );
@@ -212,7 +212,7 @@ function chempound_publish( $app_id, $jid, $user_id ) {
 
 
     copy_job_file( $jid, "output-".$index, $tmpfile, $user_id );
-    
+
     $cmd = $UP_config['chempound_importer'] . ' '. $tmpfile;
 
     exec( $cmd, $output );
@@ -254,7 +254,7 @@ function dspace_publish(  $app_id, $jid, $user_id ) {
     $index = output_file_index_of_mimetype(  $app_id, 'application/x-mets-archive' );
 
     if( $index< 0 ) { return; }
-    
+
     # Now we make the temporary dspace staging directory
 
     exec( "mktemp -d", $result ); # SJC fix
@@ -264,7 +264,7 @@ function dspace_publish(  $app_id, $jid, $user_id ) {
 
 
     copy_job_file( $jid, "output-".$index, $tmpfile, $user_id );
-    
+
     $cmd = $UP_config['dspace_importer'] . ' '. $tmpfile;
 
     exec( $cmd, $output );
@@ -307,8 +307,8 @@ function figshare_uploader_upload( $user_id, $projectid ) {
     $query = "SELECT figsharekey,figsharesecret FROM profile WHERE user_id = ?";
     $arr = db_query( $query, array($user_id) );
 
-    $tokkey     = $arr[ 'figsharekey' ];    
-    $toksecret  = $arr[ 'figsharesecret' ]; 
+    $tokkey     = $arr[ 'figsharekey' ];
+    $toksecret  = $arr[ 'figsharesecret' ];
 
     if( $tokkey === "" || $toksecret === ""  || $tokkey === null || $toksecret === null ) {
 print "No FIGSHARE credentials [$fskey] [$fssecret]";
@@ -324,9 +324,9 @@ print "No FIGSHARE credentials [$fskey] [$fssecret]";
     $cmd = "/var/www/uportal/bin/create.py -k ". $figshare_key . " ";
     $cmd = $cmd . " -g ImperialCollege ";
     $cmd = $cmd . " -g " . escapeshellarg($project);
-    $cmd = $cmd . " -s " . $figshare_secret;    
-    $cmd = $cmd . " -K " . $tokkey; 
-    $cmd = $cmd . " -S " . $toksecret;  
+    $cmd = $cmd . " -s " . $figshare_secret;
+    $cmd = $cmd . " -K " . $tokkey;
+    $cmd = $cmd . " -S " . $toksecret;
     $cmd = $cmd . " -t " . escapeshellarg($_REQUEST['title']);
     $cmd = $cmd . " -d " . escapeshellarg($_REQUEST['description']);
     if( $project ) {
@@ -348,7 +348,7 @@ print "No FIGSHARE credentials [$fskey] [$fssecret]";
     $files_for_processing = "/var/www/uportal/bin/get_inchi ";
     print_r( $_FILES );
     foreach( $_FILES as $temp ) {
-         
+
         $tmpfile = $temp[ 'tmp_name' ];
         if( file_exists( $tmpfile ) ) {
              $file    = $temp[ 'name' ];
@@ -368,8 +368,8 @@ print "No FIGSHARE credentials [$fskey] [$fssecret]";
     foreach( $foo as $temp ) {
         $cmd = $cmd . " -g " . escapeshellarg( $temp ) ;
     }
-    
-    
+
+
     if( $i===0 ) {
         printf("No files\n");
         exit(0);
@@ -409,7 +409,7 @@ print "No FIGSHARE credentials [$fskey] [$fssecret]";
             $result = db_query( $query, array($jobid, 0, $user_id, $title, 0 , true, $projectid, 'C', true, $url) );
         }
     }
-    
+
     $proto = $UP_CONFIG['protocol'];
     $host  = $_SERVER['HTTP_HOST'];
     $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');

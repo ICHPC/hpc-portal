@@ -34,18 +34,18 @@ global $UP_CONFIG;
 	global $figshare_key, $figshare_secret;
     global $UP_CONFIG;
 
- 
+
 	$key = $figshare_key;
 	$secret = $figshare_secret;
 
     $host = 'http://api.figshare.com/v1/pbl';
- 
+
     $request_token = $host .'/oauth/request_token';
     $authorize_url = $host .'/oauth/authorize';
     $access_token = $host .'/oauth/access_token';
 
- 
- 
+
+
     //CREATE an OAUTH SESSION
     $options = array
     (
@@ -55,9 +55,9 @@ global $UP_CONFIG;
       'authorize_uri' => $authorize_url,
       'access_token_uri' => $access_token,
     );
- 
+
     OAuthStore::instance("Session", $options);
- 
+
     try
     {
         if (empty($_GET["oauth_token"]))
@@ -68,18 +68,18 @@ global $UP_CONFIG;
             $getAuthTokenParams = array(
                 'oauth_callback' => "$proto://$host$uri/figshare-auth.php?key=" . $nonce,
                 );
- 
+
             $tokenResultParams = OAuthRequester::requestRequestToken($key, 0, $getAuthTokenParams);
             header("Location: " . $authorize_url . "?oauth_token=" . $tokenResultParams['token']);
       }
-      else 
+      else
       {
- 
+
         $oauthToken = $_GET["oauth_token"];
 //        $oldnonce = $_GET["key"];
- 
+
         $tokenResultParams = $_GET;
- 
+
         try {
             $lalala = OAuthRequester::requestAccessToken($key, $oauthToken, 0, 'POST', $_GET);
         }
@@ -90,7 +90,7 @@ global $UP_CONFIG;
         }
 //        $oauthTokenSecret = $_GET["oauth_token_secret"];
 
- 
+
 //function set_figshare_key_secret( $nonce, $key, $secret ) {
 
 	set_figshare_key_secret( $nonce, $lalala['oauth_token'], $lalala['oauth_token_secret'] );
@@ -99,7 +99,7 @@ global $UP_CONFIG;
     $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
     $extra = '?action=profile';
     header("Location: $proto://$host$uri/$extra");
- 
+
 #	printf("<P>NONCE: $nonce" );
 #	printf("<P>TOKEN: $oauthToken<p>SECRET: $oauthTokenSecret<P>");
 #	print_r($_GET);
@@ -108,7 +108,7 @@ global $UP_CONFIG;
     catch(OAuthException2 $e) {
         echo "OAuthException:  " . $e->getMessage();
     }
- 
+
     exit;
   }
 

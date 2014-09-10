@@ -95,12 +95,12 @@ if( empty( $_SESSION['uid'] ) ) {
     exit;
 }
 
-# Set up menus 
+# Set up menus
 
-$menuitems =  array ( 
+$menuitems =  array (
 array( "name" => "Index", "url" => "?action=index" ) ,
-array( "name" => "Projects", "url" => "?action=projects"), 
-array( "name" => "Job list", "url" => "?action=joblist"), 
+array( "name" => "Projects", "url" => "?action=projects"),
+array( "name" => "Job list", "url" => "?action=joblist"),
 array( "name" => "New job", "url" => "?action=newjob" ),
 array( "name" => "Pools", "url" => "?action=pools" ) ,
 array( "name" => "Profile", "url" => "?action=profile" ),
@@ -115,10 +115,10 @@ array( "name" => "Help", "url" => "https://wiki.ch.ic.ac.uk/wiki/index.php?title
 
 $smarty->assign( "menulinks", $menuitems ) ;
 
-    
+
 if( $display_index ) {
     $smarty->assign("motd", get_motd( $_SESSION['username'] ) );
-    
+
     $smarty->assign( "admin_email", get_admin_email() );
     $smarty->assign( "admin_email_subject", empty($UP_config['admin_email_subject']) ? 'portal email' : $UP_config['admin_email_subject'] );
     $smarty->assign( "admin_name", empty($UP_config['admin_name']) ? 'the admin' : $UP_config['admin_name'] );
@@ -137,7 +137,7 @@ switch( $action ) {
 
         $subaction = strtolower( sanify( $_REQUEST['subaction'] ) );
         switch( $subaction ) {
-            case 'publish':     
+            case 'publish':
             default:
                 $jid = empty($_REQUEST['jid' ]) ? '' : (int) $_REQUEST['jid' ];
                 if ( ! $jid || !is_int( $jid ) ) {
@@ -150,7 +150,7 @@ switch( $action ) {
                 if ( !is_publishable( $app_id, $jid ) || is_published( $jid ) ) {
                     fatal_error( "You cannot publish this job" );
                 }
-                
+
                 $profile = get_profile( $_SESSION['uid'] );
 print "<!-- ";
 print( $_SESSION['username'] );
@@ -187,8 +187,8 @@ if(1) {
                     $extra = '?action=joblist';
                     header("Location: $proto://$host$uri/$extra");
                 }
-}       
-                    
+}
+
         }
     break;
 
@@ -229,13 +229,13 @@ if(1) {
         }
 
         figshare_make_public(  $_SESSION['uid'], $jid );
-        
+
     break;
     case 'joblist':
         if( !isset( $_SESSION['page'] )) { $_SESSION['page']=0; }
         if( !isset( $_SESSION['items_per_page'] )) { $_SESSION['items_per_page']=10; }
 
-        if( isset($_REQUEST['page']) ) { 
+        if( isset($_REQUEST['page']) ) {
             $r_page = sanify( $_REQUEST['page'] );
             $page = $_SESSION['page'];
             switch( $r_page ) {
@@ -246,7 +246,7 @@ if(1) {
                     $page++;
                 break;
             }
-            $_SESSION['page']= $page;   
+            $_SESSION['page']= $page;
         }
         $page = $_SESSION['page'];
         $items_per_page = $_SESSION['items_per_page'];
@@ -257,7 +257,7 @@ if(1) {
 
         if( isset($_REQUEST['orderdir']) ) { $orderdir  = $_SESSION['orderdir']   = (int) $_REQUEST['orderdir']; }
         if( isset($_REQUEST['orderby']) )  { $orderby   = $_SESSION['orderby']    = (int) $_REQUEST['orderby']; }
-        if( isset($_REQUEST['byproject']) ){ $projectid = $_SESSION['orderby_project_id'] = (int) $_REQUEST['byproject']; } 
+        if( isset($_REQUEST['byproject']) ){ $projectid = $_SESSION['orderby_project_id'] = (int) $_REQUEST['byproject']; }
         if( isset($_REQUEST['filter']) ){ $projectid = $_SESSION['filter'] = sanify( $_REQUEST['filter'] ); }
 
         $orderdir = ( isset($_SESSION['orderdir']) ? $_SESSION['orderdir'] : '' );
@@ -265,8 +265,8 @@ if(1) {
         $projectid = ( isset($_SESSION['orderby_project_id']) ? $_SESSION['orderby_project_id'] : '' ); # -1;
         $filter    = ( isset($_SESSION['filter']) ? $_SESSION['filter'] : '' );
 
-        if ( empty($projectid) || !is_int(  $projectid )  ) { $projectid = $_SESSION['orderby_project_id'] = -1; }  
-        # untaint 
+        if ( empty($projectid) || !is_int(  $projectid )  ) { $projectid = $_SESSION['orderby_project_id'] = -1; }
+        # untaint
         if( empty( $orderby ) ||  !is_int( $orderby  ) ) { $orderby = $_SESSION['orderby']  = 0; }
         if( empty($orderdir)  ||  !is_int( $orderdir ) ) { $orderdir= $_SESSION['orderdir'] = 0; }
 
@@ -275,7 +275,7 @@ if(1) {
 
             if ( $orderdir==0 ) { $orderdir=1;}
             else {$orderdir=0;}
-        
+
         $job_list=array();
         $page++;
         while( sizeof($job_list) == 0 && $page>0 ) {
@@ -331,7 +331,7 @@ if(1) {
             if(  !app_in_pool( $pool_id, $app_id ) ) {
                     fatal_error( "You may not access this application" );
             }
-            
+
         }
         else {
             $app_id=-1;
@@ -344,7 +344,7 @@ if(1) {
             if( $project!=-1 &&  !owns_project( $_SESSION['uid'], $project ) ) {
                     fatal_error( "You may not access this project" );
             }
-            
+
         }
         else {
             $project=-1;
@@ -358,7 +358,7 @@ if(1) {
                     fatal_error( "You may not access this pool" );
                 }
 
-                $inf = app_input_file_description( $app_id );   
+                $inf = app_input_file_description( $app_id );
                 $smarty->assign( "app_input", $inf );
                 $smarty->assign( "app", $app_id );
                 $smarty->assign( "pool", $pool_id );
@@ -403,8 +403,8 @@ if(1) {
 
                 $description = sanify ( $_REQUEST['description'] );
 
-                $success =  manage_job_invocation( $_SESSION['uid'], $app_id, $description, $project ) ; 
-                if ( $success=="" ) { 
+                $success =  manage_job_invocation( $_SESSION['uid'], $app_id, $description, $project ) ;
+                if ( $success=="" ) {
                     $smarty->display('staycalm.tpl' );
                 }
                 else {
@@ -425,7 +425,7 @@ if(1) {
 
         }
 
-        
+
     break;
 
 
@@ -472,7 +472,7 @@ if(1) {
                 fatal_error( "Action not specified" );
             break;
         }
-    
+
     break;
 
     case 'outputdownload':
@@ -494,7 +494,7 @@ if(1) {
             case 'download':
                 if ($idx==-1 ) {
                   return_job_tar_file(  $jid );
-                    exit;   
+                    exit;
                 }
                 else {
                   if( ! return_job_output_file( $jid, $idx, $_SESSION['uid'] ) ) {
@@ -513,9 +513,9 @@ if(1) {
                 fatal_error( "Action not specified" );
             break;
         }
-    
 
-            
+
+
     break;
 
     case 'projects':
@@ -538,7 +538,7 @@ if(1) {
                 fatal_error( "Project contains undeleted jobs" );
             }
             delete_project( $_SESSION['uid'] , $project_id );
-        break;      
+        break;
 
         default:
         }
@@ -560,7 +560,7 @@ if(1) {
         if ( ! $pool_id || !is_int( $pool_id ) ) {
             fatal_error( "Invalid pool specified" );
         }
-        
+
         if( !owns_pool( $_SESSION['username'], $pool_id ) ) {
             fatal_error( "You do not own this pool" );
         }
@@ -581,7 +581,7 @@ if(1) {
 
     case 'pools':
         switch( strtolower( sanify( $_REQUEST['subaction'] ) ) ) {
-        
+
         case 'add':
             $error = "";
             if ( empty( $_REQUEST['user'] ) ) {
@@ -602,18 +602,18 @@ if(1) {
             display_pools();
 
 
-        break;      
+        break;
 
         case 'list':
             $pool_id = empty($_REQUEST['pool' ]) ? '' : (int) $_REQUEST['pool' ];
             if ( ! $pool_id || !is_int( $pool_id ) ) {
                 fatal_error( "Invalid pool specified" );
             }
-        
+
             if( has_access_to_pool(  $pool_id, $_SESSION['uid'] ) ) {
                 $d = get_pool_applications( $pool_id );
 
-            
+
                 if( owns_pool( $_SESSION['username'], $pool_id ) ) {
                     $smarty->assign( "mypool", true );
                 }
@@ -621,7 +621,7 @@ if(1) {
                 $smarty->assign( "pool", $pool_id );
                 $smarty->display('poolapps.tpl');
                 exit;
-                
+
             }
             else {
                 fatal_error( "You do not own this pool" );
@@ -698,7 +698,7 @@ if(1) {
         break;
 
         default:
-        
+
             display_pools();
         }
     break;
@@ -792,7 +792,7 @@ if(1) {
         $projectid   = get_project_by_jid( $jid );
         $projectname = get_project_name( $_SESSION['uid'], $projectid );
 
-    
+
 
         $c['description'][] = $projectname;
         $c['project_id' ][] = $projectid;
@@ -807,7 +807,7 @@ if(1) {
 
         $smarty->assign( "projects", $c['description'] );
         $smarty->assign( "project_idx", $c['project_id'] );
-    
+
         $smarty->display('editjob.tpl');
 
     break;
@@ -829,7 +829,7 @@ function display_profile() {
     global $smarty;
     $b = get_profile( $_SESSION['uid'] );
 
-    
+
     $smarty->assign( "profile", $b );
     $smarty->display( "profile.tpl" );
 }
@@ -841,8 +841,8 @@ function display_pools() {
             $other_pool_b = false;
             if ( !empty( $b ) ) {
                 $smarty->assign( "pools", $b );
-                
-                foreach( $b as $a ) { 
+
+                foreach( $b as $a ) {
                     if($a['mine']==true) {
                         $my_pool_b = true;
                     }
@@ -859,7 +859,7 @@ function display_pools() {
 
 function fatal_error( $err ) {
     global $smarty;
-                $smarty->assign( 'error', $err ); 
+                $smarty->assign( 'error', $err );
                 $smarty->display('error.tpl');
                 exit;
 }

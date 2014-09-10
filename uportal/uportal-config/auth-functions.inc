@@ -21,7 +21,7 @@ function ldap_authenticate( $user, $password ) {
             }
         }
 			}
-    
+
     return NULL;
 }
 
@@ -37,7 +37,7 @@ function file_authenticate($user, $password)
     $pwdhandle = fopen($UP_config['file_location'], "r");
     $pattern = "/^$user:([^:]+):([^:]+)/";
     $found = 0;
-    
+
     if ($pwdhandle)
     {
         $matches = array();
