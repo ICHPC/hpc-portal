@@ -61,6 +61,6 @@ $UP_config['admin_email'] = 'adminname@example.com';
 $UP_config['admin_name'] = 'Admin Name';
 $UP_config['admin_subject'] = 'Portal Mail';
 
-$UP_CONFIG['protocol'] = 'https';
+$UP_config['protocol'] = 'https';
 
 ?>

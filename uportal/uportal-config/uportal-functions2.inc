@@ -2113,8 +2113,8 @@ function get_job_description( $jid ) {
 }
 
 function get_admin_email() {
-    global $UP_CONFIG;
+    global $UP_config;
 
-    return (empty($UP_CONFIG['admin_email']) ? 'admin' : $UP_CONFIG['admin_email']);
+    return (empty($UP_config['admin_email']) ? 'admin' : $UP_config['admin_email']);
 }
 ?>
