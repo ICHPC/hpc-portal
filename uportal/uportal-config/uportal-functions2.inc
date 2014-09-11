@@ -597,8 +597,9 @@ print "-->";
         return $output[0];
     }
     else {
-        echo "Unable to start job";
-        die_now();
+        echo "Unable to make staging directory";
+        print "cmd: $cmd\n";
+        die();
     }
 }
 
@@ -1980,7 +1981,7 @@ function get_profile( $uid ) {
     $res['orcid'] =  $arr["orcid"];
     $res['embargo'] =  $arr['embargo'];
 //  $res['figsharekey'] =  $arr['figsharekey'];
-//  $res['figsharesecret'] =  $arr['figsharesecret'];
+    $res['figsharesecretstate'] =  !empty($arr['figsharesecret']) ? 'present' : 'absent';
     $res['pub_dspace']    = $arr['pub_dspace']    == 1 ? "checked" : "";
     $res['pub_chempound'] = $arr['pub_chempound'] == 1 ? "checked" : "";
     $res['pub_figshare']  = $arr['pub_figshare']  == 1 ? "checked" : "";

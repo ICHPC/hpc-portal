@@ -70,7 +70,6 @@ function figshare_publish( $app_id, $jid, $user_id ) {
     $toksecret  = $arr[ 'figsharesecret' ];
 
     if( $tokkey === "" || $toksecret === ""  || $tokkey === null || $toksecret === null ) {
-        print "No FIGSHARE credentials [$tokkey] [$toksecret]-->\n";
         return;
     }
 
@@ -138,7 +137,7 @@ function figshare_make_public( $user_id, $jid ) {
     $toksecret  = $arr[ 'figsharesecret' ];
 
     if( $tokkey === "" || $toksecret === ""  || $tokkey === null || $toksecret === null ) {
-        print "No FIGSHARE credentials\n"; # [$fskey] [$fssecret]";
+        print "figshare_make_public: No FIGSHARE credentials\n"; # [$fskey] [$fssecret]";
         return;
     }
 
@@ -308,7 +307,7 @@ function figshare_uploader_upload( $user_id, $projectid ) {
     $toksecret  = $arr[ 'figsharesecret' ];
 
     if( $tokkey === "" || $toksecret === ""  || $tokkey === null || $toksecret === null ) {
-print "No FIGSHARE credentials [$fskey] [$fssecret]";
+print "figshare_uploader_upload: No FIGSHARE credentials [$fskey] [$fssecret]";
         return;
     }
 

@@ -16,6 +16,10 @@
 	<td>ORCID ID</td>
 	<td>{$profile.orcid}</td>
 </tr>
+<tr>
+    <td>Figshare credentials</td>
+    <td>{$profile.figsharesecretstate}</td>
+</tr>
 
 
 <tr>
@@ -34,14 +38,6 @@
 		<option value="nothing">No action</option>
 	</td>
 </tr>
-<!--
-<tr>
-/	<td>Figshare key</td>
-	<td>
-		<input name="figsharekey" size="80" value="{$profile.figsharekey}"></input>
-	</td>
-</tr>
--->
 <tr>
 <td>Publish to DSpace</td>
 <td><input type="checkbox" name="pub_dspace" value="yes" {$profile.pub_dspace}/></td>

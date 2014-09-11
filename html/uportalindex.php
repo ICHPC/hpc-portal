@@ -177,7 +177,7 @@ print "<p>Figshare: $handle2\n";
 print "<p>Chempound: $url\n";
 print "-->\n";
 if(1) {
-                if( $handle == null && $handle2 == null && $url == null ) {
+                if( empty($handle) && empty($handle2) && empty($url) ) {
                     fatal_error( "Unable to publish. Please send the job ID to " . get_admin_email() );
                 }
                 else {

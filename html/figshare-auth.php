@@ -10,7 +10,6 @@ include_once '../uportal/oauth/OAuthRequester.php';
 require '../uportal/smarty/libs/Smarty.class.php';
 require '../uportal/uportal-config/uportal-functions2.inc';
 require '../uportal/uportal-config/dspace-functions.inc';
-require '../uportal/uportal-config/figshareconfig.inc';
 session_start();
 
 global $UP_config;
@@ -30,13 +29,11 @@ global $UP_config;
 
   function testapiAction( $nonce )
   {
-       global $dbconn;
-	global $figshare_key, $figshare_secret;
     global $UP_config;
 
 
-	$key = $figshare_key;
-	$secret = $figshare_secret;
+	$key = $UP_config['figshare_key'];
+	$secret = $UP_config['figshare_secret'];
 
     $host = 'http://api.figshare.com/v1/pbl';
 
@@ -64,7 +61,7 @@ global $UP_config;
         {
             $proto = $UP_config['protocol'];
             $host  = $_SERVER['HTTP_HOST'];
-            $uri   = $_SERVER['PHP_SELF'];
+            $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
             $getAuthTokenParams = array(
                 'oauth_callback' => "$proto://$host$uri/figshare-auth.php?key=" . $nonce,
                 );
