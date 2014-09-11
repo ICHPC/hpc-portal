@@ -1,10 +1,10 @@
 <?php
 
-require '../uportal/uportal-config/figshareconfig.inc';
 require_once 'db-functions.inc';
+require_once 'configuration2.inc';
 
 function figshare_credentials( $user_id ) {
-    global $figshare_key, $figshare_secret;
+    global $UP_config;
 
     #pg_prepare( $dbconn, "mfn2", "SELECT figsharekey, figsharesecret FROM profile WHERE userid = $1" );
     $query = "SELECT figsharekey, figsharesecret FROM profile WHERE user_id = ?";
@@ -13,8 +13,8 @@ function figshare_credentials( $user_id ) {
     $arr = db_query( $query, array($user_id) );
 
     $res = array();
-    $res[ 'consumer_key' ] = $figshare_key;
-    $res[ 'consumer_secret' ] = $figshare_secret;
+    $res[ 'consumer_key' ] = $UP_config['figshare_key'];
+    $res[ 'consumer_secret' ] = $UP_config['figshare_secret'];
     $res[ 'token_key' ] = $arr['figsharekey' ];
     $res[ 'token_secret' ] = $arr['figsharesecret' ];
 
@@ -53,7 +53,6 @@ function figshare_publish( $app_id, $jid, $user_id ) {
     # This is quick and dirty. Always assume job type is 'gaussian'
 
     # 1. Get figshare credentials
-    global $figshare_secret, $figshare_key;
     global $UP_config;
 
     #pg_prepare( $dbconn, "fpq0", "SELECT figshare_is_published FROM job_list WHERE job_id = $1" );
@@ -104,7 +103,7 @@ function figshare_publish( $app_id, $jid, $user_id ) {
     $key = make_key_name( $app_id );
 
     $cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key . ' '. $app_user.'@'.$app_host;
-    $cmd = $cmd . ' ' . $app_path. '/' . $UP_publish . ' '. $staging_dir . ' gaussian ' . $figshare_key. ' '. $figshare_secret. ' '. $tokkey. ' ' . $toksecret . ' '. $project;
+    $cmd = $cmd . ' ' . $app_path. '/' . $UP_publish . ' '. $staging_dir . ' gaussian ' . $UP_config['figshare_key']. ' '. $UP_config['figshare_secret']. ' '. $tokkey. ' ' . $toksecret . ' '. $project;
 
     $foo= array();
     exec( $cmd,  $foo );
@@ -129,7 +128,6 @@ function figshare_publish( $app_id, $jid, $user_id ) {
 }
 
 function figshare_make_public( $user_id, $jid ) {
-    global $figshare_secret, $figshare_key;
     global $UP_config;
 
     #pg_prepare( $dbconn, "fpq1", "SELECT figsharekey,figsharesecret FROM profile WHERE userid = $1" );
@@ -153,8 +151,8 @@ function figshare_make_public( $user_id, $jid ) {
 #print_r ($res);
 #print "<br> $fid";
     if( !strstr( $fid, "figshare" ) ) {
-        $cmd = "/var/www/uportal/bin/make_public.py -k ". $figshare_key . " ";
-        $cmd = $cmd . " -s " . $figshare_secret;
+        $cmd = "/var/www/uportal/bin/make_public.py -k ". $UP_config['figshare_key']. " ";
+        $cmd = $cmd . " -s " . $UP_config['figshare_secret'];
         $cmd = $cmd . " -K " . $tokkey;
         $cmd = $cmd . " -S " . $toksecret;
         $cmd = $cmd . " -a ". $fid;
@@ -301,7 +299,6 @@ function figshare_has_credentials( $uid ) {
 
 function figshare_uploader_upload( $user_id, $projectid ) {
     # 1. Get figshare credentials
-    global $figshare_secret, $figshare_key;
     global $UP_config;
 
     $query = "SELECT figsharekey,figsharesecret FROM profile WHERE user_id = ?";
@@ -319,12 +316,12 @@ print "No FIGSHARE credentials [$fskey] [$fssecret]";
 
     $UP_publish              = $UP_config['publish-figshare-local'];
 
-    $cmd =  $UP_publish . ' ' . $figshare_key. ' '. $figshare_secret. ' '. $tokkey. ' ' . $toksecret ;
+    $cmd =  $UP_publish . ' ' . $UP_config['figshare_key']. ' '. $UP_config['figshare_secret']. ' '. $tokkey. ' ' . $toksecret ;
 
-    $cmd = "/var/www/uportal/bin/create.py -k ". $figshare_key . " ";
+    $cmd = "/var/www/uportal/bin/create.py -k ". $UP_config['figshare_key']. " ";
     $cmd = $cmd . " -g ImperialCollege ";
     $cmd = $cmd . " -g " . escapeshellarg($project);
-    $cmd = $cmd . " -s " . $figshare_secret;
+    $cmd = $cmd . " -s " . $UP_config['figshare_secret'];
     $cmd = $cmd . " -K " . $tokkey;
     $cmd = $cmd . " -S " . $toksecret;
     $cmd = $cmd . " -t " . escapeshellarg($_REQUEST['title']);
