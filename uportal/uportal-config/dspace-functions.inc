@@ -101,7 +101,7 @@ function figshare_publish( $app_id, $jid, $user_id ) {
     $project = str_replace( '"', "" , $project );
     $project = str_replace( '\\', "" , $project );
 
-    $key = make_key_name( $app_id );
+    $key = make_key_name_from_app( $app_id );
 
     $cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key . ' '. $app_user.'@'.$app_host;
     $cmd = $cmd . ' ' . $app_path. '/' . $UP_publish . ' '. $staging_dir . ' gaussian ' . $figshare_key. ' '. $figshare_secret. ' '. $tokkey. ' ' . $toksecret . ' '. $project;
