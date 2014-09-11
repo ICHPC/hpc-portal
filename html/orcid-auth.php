@@ -13,7 +13,7 @@ require '../uportal/uportal-config/dspace-functions.inc';
 
 session_start();
 
-$proto = $UP_CONFIG['protocol'];
+$proto = $UP_config['protocol'];
 $host  = $_SERVER['HTTP_HOST'];
 $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
 if( !array_key_exists( 'uid', $_SESSION ) ) {
