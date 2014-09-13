@@ -126,7 +126,7 @@ function new_get_job_list( $user, $order, $limit, $orderdir=0, $project_id=-1, $
     }
 
     $query .= " ORDER BY ? ";
-    if( !empty($order) && $order >=0 && $order < count($orderby) )
+    if( isset($order) && $order >=0 && $order < count($orderby) )
     {
         #$orderbystr = $orderby[$order];
         $values[] = $orderby[$order];
@@ -530,7 +530,7 @@ function sanify(  $a ) {
     $replace = array (  '',
                         ' ',
                      );
-    if (empty ($a)) { $a = ''; } # saner than null or warnings
+    if (!isset($a)) { $a = ''; } # saner than null or warnings
     $text = preg_replace($search, $replace, $a);
     $text =  htmlentities( $text, ENT_QUOTES );
     $text = trim($text);

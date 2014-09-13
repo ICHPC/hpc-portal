@@ -265,10 +265,10 @@ if(1) {
         $projectid = ( isset($_SESSION['orderby_project_id']) ? $_SESSION['orderby_project_id'] : '' ); # -1;
         $filter    = ( isset($_SESSION['filter']) ? $_SESSION['filter'] : '' );
 
-        if ( empty($projectid) || !is_int(  $projectid )  ) { $projectid = $_SESSION['orderby_project_id'] = -1; }
+        if ( !isset($projectid) || !is_int(  $projectid )  ) { $projectid = $_SESSION['orderby_project_id'] = -1; }
         # untaint
-        if( empty( $orderby ) ||  !is_int( $orderby  ) ) { $orderby = $_SESSION['orderby']  = 0; }
-        if( empty($orderdir)  ||  !is_int( $orderdir ) ) { $orderdir= $_SESSION['orderdir'] = 0; }
+        if( !isset( $orderby ) ||  !is_int( $orderby  ) ) { $orderby = $_SESSION['orderby']  = 0; }
+        if( !isset($orderdir)  ||  !is_int( $orderdir ) ) { $orderdir= $_SESSION['orderdir'] = 0; }
 
         $projectname = get_project_name( $_SESSION['uid'], $projectid );
         $smarty->assign( "projectname", $projectname );
@@ -315,7 +315,7 @@ if(1) {
     case 'newjob':
         $subaction = strtolower( sanify( $_REQUEST['subaction'] ) );
 
-        $pool_id = empty($_REQUEST['pool' ]) ? '' : (int) $_REQUEST['pool' ];
+        $pool_id = !isset($_REQUEST['pool' ]) ? '' : (int) $_REQUEST['pool' ];
         # we check $pool_id for emptiness below
         if ( $pool_id && !is_int( $pool_id ) ) {
             fatal_error( "Invalid pool specified $pool_id" );
@@ -323,7 +323,7 @@ if(1) {
         if( $pool_id && !has_access_to_pool( $pool_id, $_SESSION['uid'] ) ) {
                 fatal_error( "You may not access this pool" );
         }
-        if( !empty ( $_REQUEST['application'] ) ) {
+        if( isset ( $_REQUEST['application'] ) ) {
             $app_id = (int) $_REQUEST['application'];
             if ( ! $app_id || !is_int( $app_id ) ) {
                 fatal_error( "Invalid application specified" );
@@ -336,7 +336,7 @@ if(1) {
         else {
             $app_id=-1;
         }
-        if( !empty ( $_REQUEST['project'] ) ) {
+        if( isset( $_REQUEST['project'] ) ) {
             $project = (int) $_REQUEST['project'];
             if ( ! $project || !is_int( $project ) ) {
                 fatal_error( "Invalid project specified" );
@@ -354,7 +354,7 @@ if(1) {
 
         switch( $subaction ) {
             case 'appinput':
-                if (empty( $pool_id ) ||  empty($app_id) ) {
+                if (!isset( $pool_id ) ||  !isset($app_id) ) {
                     fatal_error( "You may not access this pool" );
                 }
 
@@ -368,7 +368,7 @@ if(1) {
             case 'selectapp':
                 // display list of apps and projects that the user can seelct from
 
-                if (empty( $pool_id ) ||  !has_access_to_pool( $pool_id, $_SESSION['uid'] ) ) {
+                if (!isset( $pool_id ) ||  !has_access_to_pool( $pool_id, $_SESSION['uid'] ) ) {
                     fatal_error("You may not access this pool");
                 }
 
@@ -437,7 +437,7 @@ if(1) {
     break;
 
     case 'inputdownload':
-        $jid = empty($_REQUEST['jid' ]) ? '' : (int) $_REQUEST['jid' ];
+        $jid = !isset($_REQUEST['jid' ]) ? '' : (int) $_REQUEST['jid' ];
         if ( ! $jid || !is_int( $jid ) ) {
             fatal_error( "Invalid job specified" );
         }
@@ -447,7 +447,7 @@ if(1) {
             fatal_error( "You do not own this job" );
         }
 
-        $idx = empty($_REQUEST['inputfile' ]) ? '' : (int) $_REQUEST['inputfile' ];
+        $idx = !isset($_REQUEST['inputfile' ]) ? '' : (int) $_REQUEST['inputfile' ];
         if ( !is_int( $idx ) ) {
             fatal_error(  "File not specified" );
         }
@@ -476,7 +476,7 @@ if(1) {
     break;
 
     case 'outputdownload':
-        $jid = empty($_REQUEST['jid' ]) ? '' : (int) $_REQUEST['jid' ];
+        $jid = !isset($_REQUEST['jid' ]) ? '' : (int) $_REQUEST['jid' ];
         if ( ! $jid || !is_int( $jid ) ) {
             fatal_error( "Invalid job specified" );
         }
@@ -485,7 +485,7 @@ if(1) {
             fatal_error( "You do not own this job");
         }
 
-        $idx = empty($_REQUEST['outputfile' ]) ? '' : (int) $_REQUEST['outputfile' ];
+        $idx = !isset($_REQUEST['outputfile' ]) ? '' : (int) $_REQUEST['outputfile' ];
         if ( !is_int( $idx ) ) {
             fatal_error(  "File not specified" );
         }
@@ -530,7 +530,7 @@ if(1) {
         break;
 
         case 'delete':
-            $project_id = empty($_REQUEST['project_id']) ? '' : (int) $_REQUEST['project_id'];
+            $project_id = !isset($_REQUEST['project_id']) ? '' : (int) $_REQUEST['project_id'];
             if ( ! $project_id || !is_int( $project_id ) ) {
                 fatal_error( "Invalid project specified" );
             }
@@ -556,7 +556,7 @@ if(1) {
 
 
     case 'acl':
-        $pool_id = empty($_REQUEST['pool' ]) ? '' : (int) $_REQUEST['pool' ];
+        $pool_id = !isset($_REQUEST['pool' ]) ? '' : (int) $_REQUEST['pool' ];
         if ( ! $pool_id || !is_int( $pool_id ) ) {
             fatal_error( "Invalid pool specified" );
         }
@@ -605,7 +605,7 @@ if(1) {
         break;
 
         case 'list':
-            $pool_id = empty($_REQUEST['pool' ]) ? '' : (int) $_REQUEST['pool' ];
+            $pool_id = !isset($_REQUEST['pool' ]) ? '' : (int) $_REQUEST['pool' ];
             if ( ! $pool_id || !is_int( $pool_id ) ) {
                 fatal_error( "Invalid pool specified" );
             }
@@ -629,7 +629,7 @@ if(1) {
 
         break;
         case 'key':
-            $pool_id = empty($_REQUEST['pool' ]) ? '' : (int) $_REQUEST['pool' ];
+            $pool_id = !isset($_REQUEST['pool' ]) ? '' : (int) $_REQUEST['pool' ];
             if ( ! $pool_id || !is_int( $pool_id ) ) {
                 fatal_error( "Invalid pool specified" );
             }
@@ -641,7 +641,7 @@ if(1) {
             }
         break;
         case 'refresh':
-            $pool_id = empty($_REQUEST['pool' ]) ? '' : (int) $_REQUEST['pool' ];
+            $pool_id = !isset($_REQUEST['pool' ]) ? '' : (int) $_REQUEST['pool' ];
             if ( ! $pool_id || !is_int( $pool_id ) ) {
                 fatal_error( "Invalid pool specified" );
             }
@@ -666,7 +666,7 @@ if(1) {
 
         break;
         case 'delete':
-            $pool_id = empty($_REQUEST['pool' ]) ? '' : (int) $_REQUEST['pool' ];
+            $pool_id = !isset($_REQUEST['pool' ]) ? '' : (int) $_REQUEST['pool' ];
             if ( ! $pool_id || !is_int( $pool_id ) ) {
                 fatal_error( "Invalid pool specified" );
             }
@@ -681,7 +681,7 @@ if(1) {
 
         break;
         case 'status':
-            $pool_id = empty($_REQUEST['pool' ]) ? '' : (int) $_REQUEST['pool' ];
+            $pool_id = !isset($_REQUEST['pool' ]) ? '' : (int) $_REQUEST['pool' ];
             if ( ! $pool_id || !is_int( $pool_id ) ) {
                 fatal_error( "Invalid pool specified" );
             }
@@ -710,7 +710,7 @@ if(1) {
         }
         else {
             if( array_key_exists( "upload", $_REQUEST ) )  {
-                $project = empty($_REQUEST['project']) ? '' : (int) $_REQUEST['project' ];
+                $project = !isset($_REQUEST['project']) ? '' : (int) $_REQUEST['project' ];
                 if ( ! $project || !is_int( $project ) ) {
                     fatal_error( "Invalid project specified" );
                 }
@@ -755,7 +755,7 @@ if(1) {
     break;
 
     case 'editjob':
-        $jid = empty($_REQUEST['jid' ]) ? '' : (int) $_REQUEST['jid' ];
+        $jid = !isset($_REQUEST['jid' ]) ? '' : (int) $_REQUEST['jid' ];
         if ( ! $jid || !is_int( $jid ) ) {
             fatal_error( "Invalid job specified" );
         }
@@ -764,7 +764,7 @@ if(1) {
             fatal_error( "You do not own this job" );
         }
 
-        $project = empty($_REQUEST['project' ]) ? '' : (int) $_REQUEST['project' ];
+        $project = !isset($_REQUEST['project' ]) ? '' : (int) $_REQUEST['project' ];
         if ( $project ) {
             if (!is_int( $project ) ) {
                 fatal_error( "Invalid project specified" );
@@ -813,7 +813,7 @@ if(1) {
     break;
 
     default:
-        if( empty( $_SESSION['uid'] ) ) {
+        if( !isset( $_SESSION['uid'] ) ) {
             $smarty->display('login.tpl');
         }
         else {
