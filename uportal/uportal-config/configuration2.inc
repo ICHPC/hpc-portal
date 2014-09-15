@@ -67,11 +67,13 @@ $UP_config['db_user'] = 'devel';
 ### SSH commands
 ##  For the webserver to connect to the run hosts.
 ##  These are the paths to the commands on the webserver
-$UP_config['ssh']        =  "/usr/bin/ssh -oConnectTimeout=10 ";
+$UP_config['ssh']        =  "/usr/bin/ssh";
+## The flag to give to ssh / scp to pass it a private key
+$UP_config['ssh_key_flag']    = "-i";
+## A comma separated list of extra flags you may wish to pass to ssh / scp
+$UP_config['ssh_flags']  = '-oConnectTimeout=10';
 $UP_config['scp']        = "/usr/bin/scp";
 $UP_config['ssh-keygen'] = "/usr/bin/ssh-keygen";
-## The flag to give to ssh / scp to pass it a private key
-$UP_config['ssh_key']    = "-i";
 
 ###############################################################################
 ### Other local system commands
@@ -116,7 +118,7 @@ $UP_config['figshare_secret'] = 'XXXXXXXXXXXXXXXXXXXXXX'; // this is your secret
 #  Non-webserver users should NOT be able to write files here.
 #  The best solution is to set the directory owned by the webserver and have
 #   the permissions 700
-$UP_config['ssh_keydir'] = '/opt/portal-dev/deploy/keys';
+$UP_config['ssh_keydir'] = '/opt/portal-devel/deploy/keys';
 $UP_config['smarty_compile_dir'] = '/opt/portal-devel/deploy/html/templates_c';
 
 ## Temporary directory location on webserver

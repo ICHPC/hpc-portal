@@ -209,7 +209,7 @@ if(1) {
         }
         else {
 
-            $proto = $UP_CONFIG['protocol'];
+            $proto = $UP_config['protocol'];
             $host  = $_SERVER['HTTP_HOST'];
             $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
             $extra = '?action=joblist';
@@ -773,7 +773,7 @@ if(1) {
                 fatal_error( "You do not own this project" );
             }
             set_job_project( $jid, $project );
-            $proto = $UP_CONFIG['protocol'];
+            $proto = $UP_config['protocol'];
             $host  = $_SERVER['HTTP_HOST'];
             $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
             $extra = '?action=joblist';

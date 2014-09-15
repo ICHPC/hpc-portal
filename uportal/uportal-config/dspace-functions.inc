@@ -2,6 +2,7 @@
 
 require_once 'db-functions.inc';
 require_once 'configuration2.inc';
+require_once 'uportal-functions2.inc';
 
 function figshare_credentials( $user_id ) {
     global $UP_config;
@@ -83,9 +84,6 @@ function figshare_publish( $app_id, $jid, $user_id ) {
 
     #3. run teh publish-figshare script
 
-    $UP_ssh                = $UP_config['ssh'];
-    $UP_ssh_key                 = $UP_config['ssh_key'];
-    $UP_ssh_keydir           = $UP_config['ssh_keydir'];
     $UP_publish              = $UP_config['publish-figshare'];
 
     $app_user = get_app_user( $app_id );
@@ -101,9 +99,17 @@ function figshare_publish( $app_id, $jid, $user_id ) {
 
     $key = make_key_name_from_app( $app_id );
 
-    $cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key . ' '. $app_user.'@'.$app_host;
-    $cmd = $cmd . ' ' . $app_path. '/' . $UP_publish . ' '. $staging_dir . ' gaussian ' . $UP_config['figshare_key']. ' '. $UP_config['figshare_secret']. ' '. $tokkey. ' ' . $toksecret . ' '. $project;
-
+    $cmdarray = array(
+        "$app_path/$UP_publish",
+        $staging_dir,
+        'gaussian',
+        $UP_config['figshare_key'],
+        $UP_config['figshare_secret'],
+        $tokkey,
+        $toksecret,
+        $project,
+        );
+    $cmd = make_ssh_cmd( $cmdarray );
     $foo= array();
     exec( $cmd,  $foo );
     echo "<!-- $cmd -->";
@@ -150,11 +156,16 @@ function figshare_make_public( $user_id, $jid ) {
 #print_r ($res);
 #print "<br> $fid";
     if( !strstr( $fid, "figshare" ) ) {
-        $cmd = "/var/www/uportal/bin/make_public.py -k ". $UP_config['figshare_key']. " ";
-        $cmd = $cmd . " -s " . $UP_config['figshare_secret'];
-        $cmd = $cmd . " -K " . $tokkey;
-        $cmd = $cmd . " -S " . $toksecret;
-        $cmd = $cmd . " -a ". $fid;
+        $cmdarray = array(
+            '/var/www/uportal/bin/make_public.py',
+            '-k', $UP_config['figshare_key'],
+            '-s', $UP_config['figshare_secret'],
+            '-K', $tokkey,
+            '-S', $toksecret,
+            '-a', $fid,
+            );
+        $cmd = escapearguments( $cmdarray );
+
         exec( $cmd, $output );
 #       print $cmd;
 #       print "<br>";
@@ -208,7 +219,8 @@ function chempound_publish( $app_id, $jid, $user_id ) {
 
     copy_job_file( $jid, "output-".$index, $tmpfile, $user_id );
 
-    $cmd = $UP_config['chempound_importer'] . ' '. $tmpfile;
+    $cmdarray = array( $UP_config['chempound_importer'], $tmpfile );
+    $cmd = escapearguments( $cmdarray );
 
     exec( $cmd, $output );
 
@@ -260,7 +272,8 @@ function dspace_publish(  $app_id, $jid, $user_id ) {
 
     copy_job_file( $jid, "output-".$index, $tmpfile, $user_id );
 
-    $cmd = $UP_config['dspace_importer'] . ' '. $tmpfile;
+    $cmdarray = array( $UP_config['dspace_importer'], $tmpfile);
+    $cmd = escapearguments( $cmdarray );
 
     exec( $cmd, $output );
 
@@ -279,9 +292,6 @@ function dspace_publish(  $app_id, $jid, $user_id ) {
         $res = false;
     }
 
-    unlink( $tmpfile );
-    rmdir( $tmpdir );
-
     if( $res == true ) {
         remove_job_file( $jid, "output-".$index, $tmpfile );
         return $handle;
@@ -289,6 +299,9 @@ function dspace_publish(  $app_id, $jid, $user_id ) {
     else {
         return null;
     }
+
+    unlink( $tmpfile );
+    rmdir( $tmpdir );
 }
 
 function figshare_has_credentials( $uid ) {
@@ -311,37 +324,44 @@ print "figshare_uploader_upload: No FIGSHARE credentials [$fskey] [$fssecret]";
         return;
     }
 
-    $project = get_project_name( $user_id, $projectid );
-
-    $UP_publish              = $UP_config['publish-figshare-local'];
-
-    $cmd =  $UP_publish . ' ' . $UP_config['figshare_key']. ' '. $UP_config['figshare_secret']. ' '. $tokkey. ' ' . $toksecret ;
-
-    $cmd = "/var/www/uportal/bin/create.py -k ". $UP_config['figshare_key']. " ";
-    $cmd = $cmd . " -g ImperialCollege ";
-    $cmd = $cmd . " -g " . escapeshellarg($project);
-    $cmd = $cmd . " -s " . $UP_config['figshare_secret'];
-    $cmd = $cmd . " -K " . $tokkey;
-    $cmd = $cmd . " -S " . $toksecret;
-    $cmd = $cmd . " -t " . escapeshellarg($_REQUEST['title']);
-    $cmd = $cmd . " -d " . escapeshellarg($_REQUEST['description']);
-    if( $project ) {
-        $cmd = $cmd . " -p " . escapeshellarg($project) ;
-    }
-
-
-
-    if( ($_REQUEST['title'] === "" ) ) {
+    if( empty($_REQUEST['title']) ) {
         printf("No title");
         exit(0);
     }
-    if( ($_REQUEST['description'] === "") ) {
+    if( empty($_REQUEST['description']) ) {
         printf("No description");
         exit(0);
     }
 
+    $cmdarray = array(  '/var/www/uportal/bin/create.py',
+                        '-k', $UP_config['figshare_key'],
+                        '-s', $UP_config['figshare_secret'],
+                        '-K', $tokkey,
+                        '-S', $toksecret,
+                        '-t', $_REQUEST['title'],
+                        '-d', $_REQUEST['description'],
+                    );
+
+    if ( !empty($UP_config['figshare_tags']) ) {
+        foreach (explode( ',', $UP_config['figshare_tags']) as $a) {
+            $cmdarray[] = '-g';
+            $cmdarray[] = trim ($a);
+        }
+    }
+
+    $project = get_project_name( $user_id, $projectid );
+
+    if( $project ) {
+        $cmdarray[] = '-p';
+        $cmdarray[] = $project;
+        $cmdarray[] = '-g';
+        $cmdarray[] = $project;
+    }
+
+
+
     $i=0;
-    $files_for_processing = "/var/www/uportal/bin/get_inchi ";
+    $processing_cmd_array = array( '/var/www/uportal/bin/get_inchi' );
     print_r( $_FILES );
     foreach( $_FILES as $temp ) {
 
@@ -353,16 +373,21 @@ print "figshare_uploader_upload: No FIGSHARE credentials [$fskey] [$fssecret]";
             $file = preg_replace( "/\.\./", "", $file );
             $file = preg_replace( "/\n/", "", $file );
             $file = preg_replace( "/\r/", "", $file );
-            $cmd = $cmd . " -f " . $tmpfile . ":" .  $file;
+#            $cmd = $cmd . " -f " . $tmpfile . ":" .  $file;
+            $cmdarray[] = '-f';
+            $cmdarray[] = "$tmpfile:$file";
             $i++;
         }
-        $files_for_processing = $files_for_processing . " ". escapeshellarg( $tmpfile );
+#        $files_for_processing = $files_for_processing . " ". escapeshellarg( $tmpfile );
+        $processing_cmd_array[] = $tmpfile;
     }
 
+    $files_for_processing = escapearguments( $processing_cmd_array );
     exec( $files_for_processing,  $foo );
 
     foreach( $foo as $temp ) {
-        $cmd = $cmd . " -g " . escapeshellarg( $temp ) ;
+        $cmdarray[] = '-g';
+        $cmdarray[] = $temp;
     }
 
 
@@ -379,11 +404,16 @@ print "figshare_uploader_upload: No FIGSHARE credentials [$fskey] [$fssecret]";
             $cat=1;
         }
     }
-    $cmd = $cmd . " -c $cat";
+    #$cmd = $cmd . " -c $cat";
+    $cmdarray[] = '-c';
+    $cmdarray[] = $cat;
 
 #   echo "<p>";
 #   passthru( "$cmd 2>&1" );
-        exec( $cmd,  $bar );
+
+    $cmd = escapearguments( $cmdarray );
+    exec( $cmd,  $bar );
+
 #   print_r( $foo );
 #   echo "<p>";
 #   echo "$cmd ";

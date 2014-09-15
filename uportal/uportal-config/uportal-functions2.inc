@@ -564,10 +564,7 @@ function make_key_name_from_app( $app_id ) {
 function make_staging_directory( $app_id, $user_id, $job_id  ){
     global $UP_config;
 
-    $UP_ssh     = $UP_config['ssh'];
-    $UP_ssh_key = $UP_config['ssh_key'];
     $UP_make_staging_directory = $UP_config['make_staging_directory'];
-
 
     $app_user = get_app_user( $app_id );
     $app_host = get_app_host( $app_id );
@@ -575,12 +572,12 @@ function make_staging_directory( $app_id, $user_id, $job_id  ){
 
     $key = make_key_name_from_app ( $app_id );
 
-    $cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key; #$app_user . '@'.$app_host. '.id_rsa';
-    $cmd = $cmd . ' '. $app_user .'@' . $app_host;
-    $cmd = $cmd . ' '. $app_path.$UP_make_staging_directory . " ". $job_id . " '".   $_SESSION['gecos']. "'";
+    $cmdarray = array(  "$app_path$UP_make_staging_directory",
+                        $job_id,
+                        $_SESSION['gecos'],
+                    );
 
-#echo $cmd;
-
+    $cmd = make_ssh_cmd( $key, $app_user, $app_host, $cmdarray );
     $output = array();
 
 print "<!-- $cmd -->";
@@ -618,12 +615,8 @@ function get_job_status( $staging_dir, $job_id, $user_id ) {
     }
     else {
         // fetch updated state
-        global $UP_config;
-        $UP_ssh         = $UP_config['ssh'];
-        $UP_scp         = $UP_config['scp'];
-        $UP_ssh_key         = $UP_config['ssh_key'];
-        $UP_ssh_keydir          = $UP_config['ssh_keydir'];
-        $UP_job_status          = $UP_config['job_status'];
+    global $UP_config;
+    $UP_job_status          = $UP_config['job_status'];
 
     $app_user = get_app_user( $app_id );
     $app_host = get_app_host( $app_id );
@@ -631,12 +624,13 @@ function get_job_status( $staging_dir, $job_id, $user_id ) {
 
     $key = make_key_name_from_app ( $app_id );
 
-#   $cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $UP_ssh_keydir.'/'. $app_user . '@'. $app_host. '.id_rsa' . ' '. $app_user.'@'.$app_host;
-    $cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key . ' '. $app_user.'@'.$app_host;
-    $cmd = $cmd . ' ' . $app_path.$UP_job_status . ' '. $staging_dir;
+    $cmdarray = array(  "$app_path$UP_job_status",
+                        $staging_dir,
+                    );
 
     $output = array ();
 
+    $cmd = make_ssh_cmd( $key, $app_user, $app_host, $cmdarray );
 #print $cmd."</BR>";
     exec( $cmd, $output );
 
@@ -679,31 +673,26 @@ function get_job_status( $staging_dir, $job_id, $user_id ) {
 function copy_metadata_to_staging_directory( $app_id, $staging_dir, $filename, $contents ) {
     global $UP_config;
 
-    $UP_ssh         = $UP_config['ssh'];
-    $UP_scp         = $UP_config['scp'];
-    $UP_ssh_key         = $UP_config['ssh_key'];
-    $UP_ssh_keydir          = $UP_config['ssh_keydir'];
     $UP_make_staging_directory          = $UP_config['make_staging_directory'];
 
     $app_user = get_app_user( $app_id );
     $app_host = get_app_host( $app_id );
-    $app_path = get_app_path( $app_id );
 
     $key = make_key_name_from_app ( $app_id );
-
-#   $cmd = $UP_scp . ' -v  '. $UP_ssh_key . ' '. $UP_ssh_keydir.'/'. $app_user . '@'.$app_host.'.id_rsa';
 
     $tempfile = tempnam( "/tmp" , "uportal" );
     $handle = fopen( $tempfile, "w" );
     fwrite( $handle, $contents );
 
-    $cmd = $UP_scp . ' -v  '. $UP_ssh_key . ' '. $key;
-    $cmd = $cmd . ' ' . $tempfile . ' '. $app_user .'@' . $app_host . ':'.$staging_dir. '/' . $filename;
+    $cmdarray = array(  $tempfile,
+                        "$app_user@$app_host:$staging_dir/$filename",
+                    );
 
     $output = array ();
 
     fclose( $handle );
 
+    $cmd = make_scp_cmd( $key, $cmdarray );
     exec( $cmd, $output );
 
 
@@ -713,10 +702,6 @@ function copy_metadata_to_staging_directory( $app_id, $staging_dir, $filename, $
 function copy_file_to_staging_directory( $app_id, $staging_dir, $file, $input_index , $user_id ) {
     global $UP_config;
 
-    $UP_ssh         = $UP_config['ssh'];
-    $UP_scp         = $UP_config['scp'];
-    $UP_ssh_key         = $UP_config['ssh_key'];
-    $UP_ssh_keydir          = $UP_config['ssh_keydir'];
     $UP_make_staging_directory          = $UP_config['make_staging_directory'];
 
     $app_user = get_app_user( $app_id );
@@ -725,9 +710,9 @@ function copy_file_to_staging_directory( $app_id, $staging_dir, $file, $input_in
 
     $key = make_key_name_from_app ( $app_id );
 
-#   $cmd = $UP_scp . ' -v  '. $UP_ssh_key . ' '. $UP_ssh_keydir.'/'. $app_user . '@'.$app_host.'.id_rsa';
-    $cmd = $UP_scp . ' -v  '. $UP_ssh_key . ' '. $key;
-    $cmd = $cmd . ' ' . $file . ' '. $app_user .'@' . $app_host . ':'.$staging_dir. '/input-' . $input_index;
+    $cmdarray = array(  $file,
+                        "$app_user@$app_host:$staging_dir/input-$input_index",
+                    );
 
     $output = array ();
 
@@ -735,7 +720,7 @@ function copy_file_to_staging_directory( $app_id, $staging_dir, $file, $input_in
 #echo $cmd;
 #echo "</br>";
 
-
+    $cmd = make_scp_cmd( $key, $cmdarray );
     exec( $cmd, $output );
 #print_r($output );
 
@@ -988,14 +973,9 @@ function return_job_output_file( $jid, $idx ) {
     if( !isset( $arr['app_id'] ) ) {
         echo "No such output file";
         # SJC Be more graceful
-        die_now();
+        die();
     }
 
-    $UP_ssh            = $UP_config['ssh'];
-    $UP_ssh_key         = $UP_config['ssh_key'];
-    $UP_ssh_keydir       = $UP_config['ssh_keydir'];
-    $UP_make_staging_directory      = $UP_config['make_staging_directory'];
-    $UP_make_input_tar = $UP_config['make_input_tar'];
     $UP_remote_cat            = $UP_config['remote_cat'];
     $UP_filetest               = $UP_config['filetest'];
 
@@ -1005,10 +985,11 @@ function return_job_output_file( $jid, $idx ) {
 
     $key = make_key_name_from_app ( $app_id );
 
-        $cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key . ' '. $app_user.'@'.$app_host;
-        $cmd = $cmd . ' ' . $app_path.$UP_filetest . ' '. $staging_dir.'/output-'. $idx;
+        $cmdarray = array(  "$app_path$UP_filetest",
+                            "$staging_dir/output-$idx",
+                        );
 
-
+        $cmd = make_ssh_cmd( $key, $app_user, $app_host, $cmdarray );
         exec( $cmd, $output );
         if( $output[0] == "0" ) {
             # return a 403
@@ -1017,9 +998,10 @@ function return_job_output_file( $jid, $idx ) {
             return;
         }
 
-    $cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key . ' '. $app_user.'@'.$app_host;
-    $cmd = $cmd . ' ' . $UP_remote_cat . ' '. $staging_dir.'/output-'. $idx;
-
+    $cmdarray = array(  $UP_remote_cat,
+                        "$staging_dir/output-$idx",
+                    );
+    $cmd = make_ssh_cmd( $key, $app_user, $app_host, $cmdarray );
 
 
     $filename = $arr['filename'];
@@ -1048,9 +1030,6 @@ function remove_job_file( $jid, $file, $staging_file ) {
     $staging_dir = $arr['staging_dir' ];
     $app_id = $arr['app_id'];
 
-    $UP_ssh          = $UP_config['ssh'];
-    $UP_ssh_key      = $UP_config['ssh_key'];
-    $UP_ssh_keydir   = $UP_config['ssh_keydir'];
     $UP_remote_rm    = $UP_config['remote_rm'];
 
     $app_user = get_app_user( $app_id );
@@ -1061,9 +1040,10 @@ function remove_job_file( $jid, $file, $staging_file ) {
     $key = make_key_name_from_app ( $app_id );
     //copy the remote file $file to the staging_file
 
-    $cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key . ' '. $app_user.'@'.$app_host;
-    $cmd = $cmd . ' '.$UP_remote_rm. ' ' . $staging_dir.'/'.$file ;
-
+    $cmdarray = array(  $UP_remote_rm,
+                        "$staging_dir/$file",
+                    );
+    $cmd = make_ssh_cmd( $key, $app_user, $app_host, $cmdarray );
     echo "<!-- $cmd -->\n\n";
 
     exec( $cmd, $output );
@@ -1085,11 +1065,6 @@ function copy_job_file( $jid, $file, $staging_file, $user_id ) {
     $staging_dir = $arr['staging_dir' ];
     $app_id = $arr['app_id'];
 
-    $UP_scp          = $UP_config['scp'];
-    $UP_ssh_key      = $UP_config['ssh_key'];
-    $UP_ssh_keydir   = $UP_config['ssh_keydir'];
-    $UP_make_staging_directory   = $UP_config['make_staging_directory'];
-    $UP_make_input_tar = $UP_config['make_input_tar'];
     $UP_remote_cat          = $UP_config['remote_cat'];
 
     $app_user = get_app_user( $app_id );
@@ -1100,9 +1075,12 @@ function copy_job_file( $jid, $file, $staging_file, $user_id ) {
     $key = make_key_name_from_app ( $app_id );
     //copy the remote file $file to the staging_file
 
-    $cmd = $UP_scp . ' '. $UP_ssh_key . ' '. $key . ' '. $app_user.'@'.$app_host;
-    $cmd = $cmd . ':"' . $staging_dir.'/'.$file. '" "'.$staging_file.'"';
-
+    #$cmd = $UP_scp . ' '. $UP_ssh_key . ' '. $key . ' '. $app_user.'@'.$app_host;
+    #$cmd = $cmd . ':"' . $staging_dir.'/'.$file. '" "'.$staging_file.'"';
+    $cmdarray = array(  "$app_user@$app_host:$staging_dir/$file",
+                        $staging_file,
+                    );
+    $cmd = make_scp_cmd( $key, $cmdarray );
 
     exec( $cmd, $output );
 
@@ -1113,7 +1091,7 @@ function copy_job_file( $jid, $file, $staging_file, $user_id ) {
 
 }
 
-function return_job_input_file(  $jid, $idx , $user_id) {
+function return_job_input_file(  $jid, $idx ) {
     global $UP_config;
 
     $query ="SELECT staging_dir, app_id FROM job_list WHERE job_id = ?";
@@ -1129,24 +1107,18 @@ function return_job_input_file(  $jid, $idx , $user_id) {
         return 0;
     }
 
-    $UP_ssh        = $UP_config['ssh'];
-    $UP_ssh_key    = $UP_config['ssh_key'];
-    $UP_ssh_keydir = $UP_config['ssh_keydir'];
-    $UP_make_staging_directory = $UP_config['make_staging_directory'];
-    $UP_make_input_tar = $UP_config['make_input_tar'];
     $UP_remote_cat        = $UP_config['remote_cat'];
 
     $app_user = get_app_user( $app_id );
     $app_host = get_app_host( $app_id );
-    $app_path = get_app_path( $app_id );
-
 
     $key = make_key_name_from_app ( $app_id );
     // call the tar script
 
-    $cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key . ' '. $app_user.'@'.$app_host;
-    $cmd = $cmd . ' ' . $UP_remote_cat . ' '. $staging_dir.'/input-'. $idx;
-
+    $cmdarray = array(  $UP_remote_cat,
+                        "$staging_dir/input-$idx",
+                    );
+    $cmd = make_ssh_cmd( $key, $app_user, $app_host, $cmdarray );
 
     header('Content-Type: "'.$arr['mimetype'].'"');
     header('Content-disposition: attachment; filename="'.$arr['filename'].'"' );
@@ -1169,10 +1141,6 @@ function return_job_tar_file(  $jid , $user_id ) {
 
     $app_id = $arr['app_id'];
 
-    $UP_ssh        = $UP_config['ssh'];
-    $UP_ssh_key    = $UP_config['ssh_key'];
-    $UP_ssh_keydir = $UP_config['ssh_keydir'];
-    $UP_make_staging_directory        = $UP_config['make_staging_directory'];
     $UP_make_input_tar        = $UP_config['make_input_tar'];
 
     $app_user = get_app_user( $app_id );
@@ -1183,9 +1151,10 @@ function return_job_tar_file(  $jid , $user_id ) {
 
     // call the tar script
 
-    $cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key . ' '. $app_user.'@'.$app_host;
-    $cmd = $cmd . ' ' . $app_path.$UP_make_input_tar . ' '. $staging_dir ;
-
+    $cmdarray = array(  "$app_path$UP_make_input_tar",
+                        $staging_dir,
+                    );
+    $cmd = make_ssh_cmd( $key, $app_user, $app_host, $cmdarray );
 
     header("Content-Type: application/x-gzip");
     header("Content-disposition: attachment; filename=\"output_".$jid.".tar.gz\"");
@@ -1193,9 +1162,6 @@ function return_job_tar_file(  $jid , $user_id ) {
     header('Pragma: public');
     header('Expires: 0');
     header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
-
-
-
 
     passthru( $cmd );
 
@@ -1218,10 +1184,6 @@ function execute_job( $job_id, $app_id, $app, $staging_dir ) {
     $output_file_count=4;
     $memory_requirement=1000;
 
-    $UP_ssh        = $UP_config['ssh'];
-    $UP_ssh_key    = $UP_config['ssh_key'];
-    $UP_ssh_keydir = $UP_config['ssh_keydir'];
-    $UP_delete_job = $UP_config['delete_job'];
     $UP_run_job    = $UP_config['run_job'];
 
     $app_user = get_app_user( $app_id );
@@ -1238,10 +1200,16 @@ function execute_job( $job_id, $app_id, $app, $staging_dir ) {
     $cpu_requirement    = get_app_cpu_requirement( $app_id );
     $walltime           = get_app_walltime_requirement( $app_id );
 
-    $cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key;
-    $cmd = $cmd . ' '. $app_user .'@' . $app_host;
-    $cmd = $cmd . ' '. $app_path.$UP_run_job . ' '. $staging_dir . ' ' . $input_file_count . ' ' . $output_file_count . ' "' . $app_script .'" '. $memory_requirement . ' ' . $cpu_requirement  . ' ' . $walltime;
-
+    $cmdarray = array(  "$app_path$UP_run_job",
+                        $staging_dir,
+                        $input_file_count,
+                        $output_file_count,
+                        $app_script,
+                        $memory_requirement,
+                        $cpu_requirement,
+                        $walltime,
+                    );
+    $cmd = make_ssh_cmd( $key, $app_user, $app_host, $cmdarray );
 #echo $cmd;
 print "<!-- $cmd -->";
 
@@ -1286,9 +1254,6 @@ function delete_job( $job_id ) {
 #       die_now();
 #   }
 
-    $UP_ssh         = $UP_config['ssh'];
-    $UP_ssh_key     = $UP_config['ssh_key'];
-    $UP_ssh_keydir = $UP_config['ssh_keydir'];
     $UP_delete_job  = $UP_config['delete_job'];
 
     $app_user = get_app_user( $app_id );
@@ -1298,10 +1263,10 @@ function delete_job( $job_id ) {
 
     $key = make_key_name_from_app ( $app_id );
 
-    $cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key;
-    $cmd = $cmd . ' '. $app_user .'@' . $app_host;
-    $cmd = $cmd . ' '. $app_path.$UP_delete_job . ' '. $staging_dir;
-
+    $cmdarray = array(  "$app_path$UP_delete_job",
+                        $staging_dir,
+                    );
+    $cmd = make_ssh_cmd( $key, $app_user, $app_host, $cmdarray );
 //echo $cmd;
     exec  ($cmd, $output );
 
@@ -1360,17 +1325,15 @@ function pool_motd( $pool_id) {
 
     $key = make_key_name_from_pool( $pool_id );
 
-    $UP_ssh     = $UP_config['ssh'];
-    $UP_ssh_key = $UP_config['ssh_key'];
     $UP_pool_status = "motd";
 
     $app_user =  $arr['remote_user'];
     $app_host =  $arr['remote_host'];
     $app_path =  $arr['script_path'] ."/";
 
-    $cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key; #$app_user . '@'.$app_host. '.id_rsa';
-    $cmd = $cmd . ' '. $app_user .'@' . $app_host;
-    $cmd = $cmd . ' '. $app_path.$UP_pool_status;
+    $cmdarray = array(  "$app_path$UP_pool_status",
+                    );
+    $cmd = make_ssh_cmd( $key, $app_user, $app_host, $cmdarray );
 
     $output = array();
 
@@ -1389,17 +1352,15 @@ function pool_status( $pool_id) {
 
     $key = make_key_name_from_pool( $pool_id );
 
-    $UP_ssh     = $UP_config['ssh'];
-    $UP_ssh_key = $UP_config['ssh_key'];
     $UP_pool_status = $UP_config['pool_status'];
 
     $app_user =  $arr['remote_user'];
     $app_host =  $arr['remote_host'];
     $app_path =  $arr['script_path'] ."/";
 
-    $cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key; #$app_user . '@'.$app_host. '.id_rsa';
-    $cmd = $cmd . ' '. $app_user .'@' . $app_host;
-    $cmd = $cmd . ' '. $app_path.$UP_pool_status;
+    $cmdarray = array(  "$app_path$UP_pool_status",
+                    );
+    $cmd = make_ssh_cmd( $key, $app_user, $app_host, $cmdarray );
 
     $output = array();
 
@@ -1565,8 +1526,13 @@ function add_pool( $user, $remote_user, $remote_host, $script_path, $description
 
     # Generate a new ssh key
 
-    $sshkeygen = $UP_config['ssh-keygen'];
-    $cmd = $sshkeygen . " -t rsa -f " . $key;
+#    $sshkeygen = $UP_config['ssh-keygen'];
+#    $cmd = $sshkeygen . " -t rsa -f " . $key;
+    $cmdarr = array(    $UP_config['ssh-keygen'],
+                        '-t', 'rsa',
+                        '-f', $key,
+                    );
+    $cmd = escapearguments( $cmdarray );
     $arr = exec( $cmd );
 
 
@@ -1633,17 +1599,15 @@ function refresh_pool_applications( $pool_id ) {
 
     $key = make_key_name_from_pool( $pool_id );
 
-    $UP_ssh     = $UP_config['ssh'];
-    $UP_ssh_key = $UP_config['ssh_key'];
     $UP_app_config = $UP_config['app_config'];
 
     $app_user =  $arr['remote_user'];
     $app_host =  $arr['remote_host'];
     $app_path =  $arr['script_path'] ."/";
 
-    $cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key; #$app_user . '@'.$app_host. '.id_rsa';
-    $cmd = $cmd . ' '. $app_user .'@' . $app_host;
-    $cmd = $cmd . ' '. $app_path.$UP_app_config;
+    $cmdarray = array(  "$app_path$UP_app_config",
+                    );
+    $cmd = make_ssh_cmd( $key, $app_user, $app_host, $cmdarray );
 
     $output = array();
 
@@ -2032,13 +1996,7 @@ function return_job_output_file_str( $app_id, $jid, $idx , $user_id ) {
 
     $staging_dir = $arr['staging_dir' ];
 
-    $UP_ssh            = $UP_config['ssh'];
-    $UP_ssh_key         = $UP_config['ssh_key'];
-    $UP_ssh_keydir       = $UP_config['ssh_keydir'];
-    $UP_make_staging_directory      = $UP_config['make_staging_directory'];
-    $UP_make_input_tar = $UP_config['make_input_tar'];
     $UP_remote_cat            = $UP_config['remote_cat'];
-    $UP_filetest               = $UP_config['filetest'];
 
     $app_user = get_app_user( $app_id );
     $app_host = get_app_host( $app_id );
@@ -2046,8 +2004,10 @@ function return_job_output_file_str( $app_id, $jid, $idx , $user_id ) {
 
     $key = make_key_name_from_app ( $app_id );
 
-    $cmd = $UP_ssh . ' '. $UP_ssh_key . ' '. $key . ' '. $app_user.'@'.$app_host;
-    $cmd = $cmd . ' ' . $UP_remote_cat . ' '. $staging_dir.'/output-'. $idx;
+    $cmdarray = array(  $UP_remote_cat,
+                        "$staging_dir/output-$idx",
+                    );
+    $cmd = make_ssh_cmd( $key, $app_user, $app_host, $cmdarray );
 
     $foo= array();
     exec( $cmd,  $foo );
@@ -2137,4 +2097,47 @@ function tempdir() {
     return $path;
 }
 
+function escapearguments( $args ) {
+    $str = '';
+    foreach( $args as $a ) {
+        $str .= ' ' . escapeshellarg( $a );
+    }
+    return ltrim($str);
+}
+
+function make_ssh_cmd( $sshkey, $app_user, $app_host, $cmdarray ) {
+    global $UP_config;
+    $UP_ssh     = $UP_config['ssh'];
+    $UP_ssh_flags = $UP_config['ssh_flags'];
+    $UP_ssh_key = $UP_config['ssh_key_flag'];
+    $ssharray = array(  $UP_ssh,
+                        $UP_ssh_key,
+                        $sshkey,
+                        "$app_user@$app_host",
+                    );
+    foreach ( explode(',', $UP_ssh_flags) as $f ) {
+        $ssharray[] = trim($f);
+    }
+    $cmd  = escapearguments( $ssharray);
+    if( ! $cmdarray ) { die( 'Invalid command for ssh' ); };
+    # Double escaped because it's running on the remote host
+    $cmd .= ' ' . escapeshellarg( escapearguments($cmdarray) );
+    return $cmd;
+}
+
+function make_scp_cmd( $sshkey, $cmdarray ) {
+    global $UP_config;
+    $UP_scp     = $UP_config['scp'];
+    $UP_ssh_flags = $UP_config['ssh_flags'];
+    $UP_ssh_key = $UP_config['ssh_key_flag'];
+    $scparray = array(  $UP_scp,
+                        $UP_ssh_key,
+                        $sshkey,
+                    );
+    foreach ( explode(',', $UP_ssh_flags) as $f ) {
+        $scparray[] = trim($f);
+    }
+    $cmd = escapearguments( array_merge($scparray, $cmdarray) );
+    return $cmd;
+}
 ?>
