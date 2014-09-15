@@ -14,6 +14,9 @@ $smarty->force_compile = true;
 
 session_start();
 
+$menuitems =  array ();
+$smarty->assign( "menulinks", $menuitems ) ;
+$smarty->assign('error', null);
 
 if( !empty( $_SESSION['gecos'] ) ) {
     # Set username in template
@@ -44,7 +47,7 @@ switch( $action ) {
         if( empty ( $gecos ) ) {
             $smarty->assign('error', "Bad credentials");
             $smarty->display('login.tpl');
-            $processed = 1;
+            exit;
         }
         else {
 
@@ -74,7 +77,7 @@ switch( $action ) {
         $_SESSION = array();
         $smarty->assign( "gecos", null );
         $smarty->display('login.tpl');
-        $processed = 1;
+        exit;
     break;
 
     case '':
