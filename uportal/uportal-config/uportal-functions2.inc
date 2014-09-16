@@ -351,6 +351,7 @@ function add_user( $dn ) {
     }
 
     add_profile(  $user_id );
+    add_project(  $user_id, 'default' );
 }
 
 function owns_job( $uid, $jid ) {
@@ -1452,6 +1453,26 @@ function get_pools( $user ) {
     return $plist;
 }
 
+function get_pool( $pool_id ) {
+
+    $query = "SELECT * FROM pools WHERE pool_id = ?";
+    $arr = db_query( $query, array($pool_id) );
+
+    $foo = array();
+#print $query;
+    if (!empty($arr)) {
+        $foo = array(
+            'user' => $arr['remote_user'],
+            'host'=>$arr['remote_host'],
+            'description' => $arr['description'],
+            'path' => $arr['script_path'],
+            'pool_id' => $arr['pool_id'],
+            'mine' => true,
+        );
+    }
+    return $foo;
+}
+
 function delete_pool( $user, $pool_id ) {
     $user_id = get_uid( $user );
 
@@ -1535,7 +1556,7 @@ function add_pool( $user, $remote_user, $remote_host, $script_path, $description
     $cmd = escapearguments( $cmdarray );
     $arr = exec( $cmd );
 
-
+    return ( $pool_id );
 }
 
 function get_pool_applications( $pool_id ) {

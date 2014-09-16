@@ -600,9 +600,9 @@ if(1) {
                 fatal_error(  "Description not specified" );
             }
 
-            add_pool( $_SESSION['username'], sanify( $_REQUEST['user'] ), sanify( $_REQUEST['host'] ), sanify( $_REQUEST['path'] ), sanify( $_REQUEST['description'] ) );
+            $pool_id = add_pool( $_SESSION['username'], sanify( $_REQUEST['user'] ), sanify( $_REQUEST['host'] ), sanify( $_REQUEST['path'] ), sanify( $_REQUEST['description'] ) );
 
-            display_pools();
+            display_added_pool( $pool_id );
 
 
         break;
@@ -859,6 +859,16 @@ function display_pools() {
             $smarty->assign( "other_pools", $other_pool_b );
 
             $smarty->display( "poollist.tpl" );
+}
+
+function display_added_pool( $pool_id ) {
+    global $smarty;
+            $b = get_pool( $pool_id );
+            if ( !empty( $b ) ) {
+                $smarty->assign( "pool", $b );
+            }
+
+            $smarty->display( "pooladded.tpl" );
 }
 
 function fatal_error( $err ) {
