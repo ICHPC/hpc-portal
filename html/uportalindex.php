@@ -649,6 +649,7 @@ if(1) {
                 fatal_error( "Invalid pool specified" );
             }
             if( owns_pool( $_SESSION['username'], $pool_id ) ) {
+                $smarty->assign( "mypool", true );
                 $resp = refresh_pool_applications( $pool_id );
                 if( $resp==NULL ) {
                     $d = get_pool_applications( $pool_id );

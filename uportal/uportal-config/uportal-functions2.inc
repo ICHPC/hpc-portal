@@ -1528,7 +1528,7 @@ function add_pool( $user, $remote_user, $remote_host, $script_path, $description
 
 #    $sshkeygen = $UP_config['ssh-keygen'];
 #    $cmd = $sshkeygen . " -t rsa -f " . $key;
-    $cmdarr = array(    $UP_config['ssh-keygen'],
+    $cmdarray = array(    $UP_config['ssh-keygen'],
                         '-t', 'rsa',
                         '-f', $key,
                     );

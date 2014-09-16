@@ -29,7 +29,7 @@ Computing Portal
 			<a href="http://www.google.co.uk/" tabindex="1">Institution Home Page</a>
 	  </div>
 	  <div id="topright">
-		{if $gecos}
+		{if !empty($gecos)}
 		You are logged in as {$gecos}. <a href="?action=logout">Logout</a>
 		{/if}
   		<!-- Text size selector -->
