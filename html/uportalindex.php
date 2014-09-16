@@ -566,7 +566,7 @@ if(1) {
                 $smarty->assign( "project_idx", $b['project_id'] );
             }
             else {
-                $smart->assign( "projects", '');
+                $smarty->assign( "projects", '');
             }
             $smarty->display( "projects.tpl" );
     break;
