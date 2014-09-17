@@ -174,9 +174,9 @@ print "<!-- pub to figshare\n-->";
                     fatal_error( "You have no publication methods enabled. Fix this in your profile." );
                 }
 print "<!--";
-print "<p>DSPACE: $handle\n";
-print "<p>Figshare: $handle2\n";
-print "<p>Chempound: $url\n";
+if (!empty($handle)) {print "<p>DSPACE: $handle\n"; }
+if (!empty($handle2)) {print "<p>Figshare: $handle2\n"; }
+if (!empty($url)) {print "<p>Chempound: $url\n"; }
 print "-->\n";
 if(1) {
                 if( empty($handle) && empty($handle2) && empty($url) ) {
