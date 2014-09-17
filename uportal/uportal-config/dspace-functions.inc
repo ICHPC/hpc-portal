@@ -109,7 +109,7 @@ function figshare_publish( $app_id, $jid, $user_id ) {
         $toksecret,
         $project,
         );
-    $cmd = make_ssh_cmd( $cmdarray );
+    $cmd = make_ssh_cmd( $key, $app_user, $app_host, $cmdarray );
     $foo= array();
     exec( $cmd,  $foo );
     echo "<!-- $cmd -->";

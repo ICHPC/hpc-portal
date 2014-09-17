@@ -7,7 +7,6 @@ include_once '../uportal/oauth/OAuthRequester.php';
 
 
 
-require '../uportal/smarty/libs/Smarty.class.php';
 require '../uportal/uportal-config/uportal-functions2.inc';
 require '../uportal/uportal-config/dspace-functions.inc';
 session_start();

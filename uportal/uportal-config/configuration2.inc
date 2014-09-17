@@ -19,6 +19,16 @@
 ini_set('error_reporting', E_ALL);
 
 ###############################################################################
+### Smarty template engine.  Either version 2 or 3 should work.
+##
+## Use this option if you have a package installed Smarty, it should
+## work if the Smarty directory is in the PHP include_path
+require('Smarty/Smarty.class.php');
+## Otherwise use this option, replacing the path with the path to
+## your locally installed Smarty.
+# require('/usr/local/share/php/Smarty/Smarty.class.php');
+
+###############################################################################
 ### Where errors go.  Uncomment suitably.
 ## Display all errors in browsers
 ini_set('display_errors', 1);
