@@ -1,0 +1,69 @@
+#!/bin/bash
+
+# INPUT
+# 0 Amber MDIN input file
+# 1 Amber CRD file
+# 2 Amber Topology file
+
+# OUTPUT
+# 0 Amber log file
+# 1 Amber MDOUT file
+# 2 Amber MDINFO file
+# 3 Amber restart file
+
+if [ "$1" == "-h" ]; then
+	echo "	<application description=\"DDSCAT\" script='ddscat' memory=\"1800\" ncpus=\"1\" walltime=\"72\">"
+	echo "		<input index=\"0\" mimetype=\"text/plain\" description=\"PAR file\" filename=\"ddscat_{ID}.par\" />";
+	echo "		<input index=\"1\" mimetype=\"text/plain\" description=\"TAB file\" filename=\"ddscat_{ID}.tab\" />";
+
+	echo "		<output index=\"0\" mimetype=\"text/plain\" description=\"Log file\" filename=\"ddscat_{ID}.log_000.txt\" />";
+	echo "		<output index=\"1\" mimetype=\"text/plain\" description=\"mtable file\" filename=\"mtable_{ID}.txt\" />";
+	echo "		<output index=\"2\" mimetype=\"text/plain\" description=\"qtable file\" filename=\"qtable_{ID}.txt\" />";
+	echo "		<output index=\"3\" mimetype=\"text/plain\" description=\"qtable2 file\" filename=\"qtable2_{ID}.txt\" />";
+	echo "		<output index=\"4\" mimetype=\"application/x-compressed\" description=\"sca file archive\" filename=\"sca_{ID}.tar.gz\" />";
+	echo "		<output index=\"5\" mimetype=\"application/x-compressed\" description=\"avg file archive\" filename=\"avg_{ID}.tar.gz\" />";
+	echo "	</application>"
+exit 0
+fi
+
+
+
+START_TIME=`date +%s`
+
+echo "COMPLETED" > status
+
+if [ "${HOME}" == "" ]; then
+	export HOME=/tmp
+fi;
+
+export PATH=$PATH:/bin:/usr/bin
+
+. /etc/profile.d/module.sh
+
+module load intel-suite/10.1 mpi ddscat
+
+cp input-0 $TMPDIR/ddscat.par
+cp input-1 $TMPDIR/ddscat.tab
+
+echo "Running DDSCAT"
+/bin/date
+
+SRCDIR=$PWD
+
+cd $TMPDIR
+
+ddscat
+
+ln -s ddscat.log_000 output-0
+ln -s mtable   output-1
+ln -s qtable  output-2
+ln -s qtable2  output-3
+tar -zcf output-4 *sca
+tar -zcf output-5 *avg
+
+END_TIME=`date +%s`
+
+let "WALLTIME=${END_TIME}-${START_TIME}"
+
+cp * ${SRCDIR}/
+echo ${WALLTIME} > walltime

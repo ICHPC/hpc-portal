@@ -1,0 +1,36 @@
+#!/bin/sh
+
+#Makes a run directory for the job
+# Returns the directory name relative to $HOME
+
+
+# Args:
+# Arg 1 jobid
+# Arg 2: user
+# Arg 3: project 
+# Arg 4: description
+
+unset TMPDIR
+
+JOBID=$1
+#USERID=$2
+#PROJECT=$3
+#ABSTRACT=$4
+
+	T=`basename $1`
+	T=$HOME/run/$T
+	mkdir -p $T
+
+echo "" > $T/substatus
+echo "?" > $T/batchid
+echo run/`basename $T`
+
+shift
+
+echo $* > $T/user
+#echo "$3" > $T/project
+#echo "$4" > $T/description
+
+
+
+

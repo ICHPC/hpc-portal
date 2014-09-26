@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# Tars the directory specified on the cmd line and returns the tgz on stdout
+
+cd $1
+T=`basename $1`
+cd ..
+
+tar -zcf - $T
+

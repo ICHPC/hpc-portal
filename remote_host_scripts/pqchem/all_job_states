@@ -1,0 +1,99 @@
+#!/bin/sh
+
+
+
+export PBS_DIR=/usr/pbs/bin/
+
+STATE="C"
+
+# get job state
+
+cd $HOME/run
+
+
+echo "<JOBLIST>";
+
+for T in *; do
+
+PORTAL_JOB=$T;
+
+if [ -d $PORTAL_JOB ]; then 
+
+cd $PORTAL_JOB;
+
+
+NOTOURS=0
+
+if [ -e "batchid" ]; then 
+	JID=`cat batchid`
+	echo $JID | grep -q .cx1
+
+	if [ $? == "1" ]; then
+		NOTOURS=1
+	fi
+else
+	NOTOURS=1
+fi
+
+if [ $NOTOURS == "0" ]; then 
+
+	STATE="!"
+	if [ "$JID" == "?" ]; then
+		STATE="?"
+	else 
+		if [ "$JID" == "!" ]; then
+			STATE="!"
+		else
+
+			STATE=`(${PBS_DIR}/qstat ${JID} | tail -1 | cut -b63-63) 2> /dev/null`
+		fi
+	fi
+
+	if [ "$STATE" == "" ]; then
+		STATE="C"
+	elif [ "$STATE" == "Q" ]; then
+		STATE="I"
+	fi
+
+	echo "<JOB id=\"$PORTAL_JOB\" state=\"$STATE\">"
+
+	echo "<STATUS>";
+	if [ -e "substatus" ]; then
+		head -1 "substatus"
+	fi
+
+	echo "</STATUS>"
+
+	echo "<WALLTIME>"
+	if [ "$STATE" == "C" ]; then
+		if [ -e walltime ]; then
+		cat walltime
+	else
+		echo "-1";
+	fi
+	echo "</WALLTIME>"
+	
+	echo "</JOB>"
+fi
+
+
+cd ..
+fi
+fi
+
+done
+
+
+echo "</JOBLIST>"
+
+# states may be
+# U unexpanded: never run
+# H on hold
+# R running
+# I idle
+# C completed
+# X removed
+# ! failed
+# ? not queued
+
+

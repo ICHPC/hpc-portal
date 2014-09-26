@@ -1,0 +1,267 @@
+#!/bin/bash
+
+# INPUT
+# 0 Gaussian input file
+# 1 Formatted checkpoint file (optional)
+
+
+# OUTPUT
+# 0 Stdout
+# 1 Formatted checkpoint file
+# 2 CML
+# 3 INCHI
+# 4 METS archive
+
+
+# CMD LINE ARGUMENTS
+#1 -h  (optional)
+#2 script name
+#3 Num Px
+#4 Gaussian version
+#5 Memory
+
+
+SCRIPT=$1
+NCPUS=$2
+GAUSSIAN=$3
+RQMEM=$4
+
+if [ "$RQMEM" == "" ]; then
+	RQMEM=15600
+	MEM=14000
+else
+	let MEM=$RQMEM*90/100
+fi
+
+
+
+let HMEM=$RQMEM/1000
+
+if [ "$1" == "-h" ]; then
+
+	SCRIPT=$2
+	NCPUS=$3
+	GAUSSIAN=$4
+	let RQMEM=$5
+	let HMEM=$RQMEM/1000
+	echo "	<application description=\"Gaussian ${GAUSSIAN}  ${NCPUS}px ${HMEM}GB\" script='${SCRIPT}' memory=\"${RQMEM}\" ncpus=\"${NCPUS}\" walltime=\"96\">"
+	echo "		<input index=\"0\" mimetype=\"chemical/x-gaussian-input\" description=\"Gaussian Input file\" />";
+	echo "		<input index=\"1\" mimetype=\"chemical/x-gaussian-checkpoint\" description=\"Formatted Checkpoint File\"  required=\"no\" />";
+	echo "		<output index=\"0\" mimetype=\"chemical/x-gaussian-log\" description=\"Gaussian Log File\" filename=\"log_{ID}.log\" />";
+	echo "		<output index=\"1\" mimetype=\"chemical/x-gaussian-checkpoint\" description=\"Formatted Checkpoint File\" filename=\"checkpoint_{ID}.fchk\" />";
+	echo "		<output index=\"2\" mimetype=\"chemical/x-cml\" description=\"CML\" filename=\"cml_{ID}.xml\" />";
+	echo "		<output index=\"3\" mimetype=\"chemical/x-inchi\" description=\"INCHI\" filename=\"inchi_{ID}.xml\" />";
+	echo "		<output index=\"4\" mimetype=\"chemical/x-smiles\" description=\"SMILES\" filename=\"smiles_{ID}.xml\" />";
+	echo "		<output index=\"5\" mimetype=\"application/x-mets-archive\" description=\"METS Archive\" filename=\"mets_{ID}.zip\" />";
+	echo "		<output index=\"6\" mimetype=\"text/plain\" description=\"Wavefunction characteristics WFN\" filename=\"wavefunction_{ID}.wfn\" />";
+	echo "		<output index=\"7\" mimetype=\"text/plain\" description=\"Wavefunction characteristics WFX\" filename=\"wavefunction_{ID}.wfx\" />";
+	echo "	</application>"
+exit 0
+fi
+
+# Create the ouput files here
+# Condor will re-run the job if it can't find all the output files expected
+for T in `seq 0 6`; do
+	/bin/touch output-$T
+done;
+
+
+START_TIME=`date +%s`
+
+echo "COMPLETED" > status
+
+if [ "${HOME}" == "" ]; then
+	export HOME=/tmp
+fi;
+
+export PATH=$PATH:/bin:/usr/bin
+
+. /etc/profile.d/module.sh
+
+if [ "$GAUSSIAN" == "" ]; then
+	GAUSSIAN="g09-b01"
+fi
+
+#module load intel-suite/cmkl-9.0.017
+#module load intel-suite/icc-9.1.042
+#module load gaussian/g03-d02-test
+#module load gaussian/g03-d02-pgi
+module load intel-suite
+module load gaussian/$GAUSSIAN
+module load openbabel/2.3.0
+module load java
+module load mets-writer
+
+export OMP_NUM_THREADS=1
+
+cp input-0 mjh
+
+# Get the amount of memory present on this system and resuce it by 200MB
+
+#MEM=`/bin/grep MemTotal /proc/meminfo | /bin/cut -b 10-19 | /bin/sed "s/ //g" | /bin/awk '{print $1-200}'`
+
+# Force gaussian to put its temp files in the cwd and not /tmp
+export GAUSS_SCRDIR=${PWD}
+
+
+echo "Running Gaussian"
+/bin/date
+
+# If a checkpoint file has specified, unformat it
+echo
+pwd
+ls -l
+echo
+
+if [ -e input-1 ]; then
+	echo "Formatted checkpoint file in input"
+	echo "Unformatting:"
+ 
+	ln -s input-1 input-1.fchk
+	unfchk input-1
+	ln -s input-1.chk chk.chk
+
+	echo "Done." 
+
+fi
+
+# Fix up the input deck
+# Remove and replace directives
+# To ensure the job uses the resources available to it
+
+# Process the input file to set memory and CPU count appropriately
+/usr/bin/dos2unix -c mac -n input-0 tmp3
+
+
+#/bin/grep -vi %nprocshared tmp3 | grep -vi %rwf | grep -vi %mem  | grep -vi %chk | sed "s/\n\n/\n/g"    >  tmp1
+
+grep -ve "^%" tmp3 > tmp1
+
+
+echo "%nprocshared=${NCPUS}
+%mem=${MEM}MB
+%NoSave
+%Chk=chk.chk
+%rwf=${TMPDIR}/rwf
+" > input-0
+
+/bin/cat tmp1 >> input-0
+echo "" >> input-0
+
+cp input-0 input-0.out
+
+# Make a description of the job to satisfy Henry
+
+grep \# input-0 > summary
+
+# Stupid condor doesn't close stdin
+
+/bin/cat input-0 | g03  > output-0
+
+
+echo "Creating formatted checkpoint file"
+
+formchk chk.chk output-1
+cp output-1.fchk output-1 
+gzip output-1.fchk
+rm chk.chk
+
+echo "Creating CML"
+
+# Create CML
+babel -i g03 output-0 -o cml output-2 -xNcml
+
+# Extract more g03-specific info, thanks to PMR
+legacy2cml -INFILE output-0 -OUTFILE xxxxxx 
+
+echo "Creating InChI"
+
+# Make inchi
+babel -i g03 output-0 -o inchi output-3
+
+# Make and add an inchikey
+
+inchi_addkey -n output-3
+grep InChIKey InChIKeys.txt >> output-3
+
+# Make SMILES form
+babel -i g03 output-0 -o smi - 2>/dev/null | /bin/cut -f1 > output-4
+
+# Copy any *.wfn file to output-6
+cp *.wfn output-6
+cp *.wfx output-7
+
+
+TT=""
+N=1;
+for T in x*; do
+	if [ -e "$T" ]; then 
+		TT="$TT -i $T chemical/x-cml archive-cml-$N.xml"
+		let N=N+1
+	fi	
+done
+
+echo "Creating METS package"
+
+
+DATE=` date +%Y-%M-%d`
+USER=`cat user`
+
+# Create the metadata input for the METS writer
+
+FOAF=`cat foaf`
+ORCID=`cat orcid`
+
+echo "type=Gaussian job archive 
+title=
+identifier=
+license=http://www.closed.com
+rights=${USER}
+experimentDate=${DATE}
+publisher=Imperial College London
+contributor=${USER}
+creator=${USER}" > metadata.txt
+
+if [ "$FOAF" != "" ]; then
+	echo "foaf=$FOAF" >> metadata.txt
+fi
+
+if [ "$ORCID" != "" ]; then
+	echo "orcid=$ORCID" >> metadata.txt
+	echo "orcid-id=http://orcid.org/$ORCID" >> metadata.txt
+fi
+
+#export CLASSPATH=$CLASSPATH:/home/mjharvey/mets-generator
+
+grep -e"^ #" output-0 > keywords
+
+WFN_FILE=""
+WFX_FILE=""
+if [ -e output-6 ]; then 
+	WFN_FILE="-i output-6 chemical/x-wavefunction wavefunction.wfn"
+fi
+
+if [ -e output-7 ]; then 
+	WFX_FILE="-i output-7 chemical/x-wavefunction wavefunction.wfx"
+fi
+
+METSWriter -i input-0  chemical/x-gaussian-input input.gjf \
+	   -i output-0 chemical/x-gaussian-log logfile.log \
+           -i output-1.fchk.gz chemical/x-gaussian-checkpoint checkpoint.fchk.gz \
+           -i output-2 chemical/x-cml cml.xml \
+	   -i output-3 chemical/x-inchi inchi.txt \
+	   -i output-4 chemical/x-smiles smiles.txt \
+		$WFN_FILE $WFX_FILE \
+	   -i keywords x-uportal/x-description description.txt \
+	   $TT \
+	   -o output-5 \
+	   -m metadata.txt
+
+#	   -i project  x-uportal/x-project project.txt  \
+#	   -i description x-uportal/x-description  description.txt \
+
+END_TIME=`date +%s`
+
+let "WALLTIME=${END_TIME}-${START_TIME}"
+
+echo ${WALLTIME} > walltime

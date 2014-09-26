@@ -1,0 +1,89 @@
+#!/bin/sh
+
+export PBS_DIR=/usr/pbs/bin/
+
+if [ "$#" != "7" ]; then
+	echo "Syntax: $0 <staging-dir> <input-file-count> <output-file-count> <application-name> <memory requirement> <ncpus> <walltime (hrs)>"
+	exit -1
+fi
+
+
+STAGING_DIR=$1
+
+INPUT_COUNT=$2
+
+OUTPUT_COUNT=$3
+
+APPLICATION=$4
+
+MEMORY=$5
+
+NCPUS=$6
+
+WALLTIME=$7
+
+JOB_SUFFIX=`basename $STAGING_DIR`
+
+cd $STAGING_DIR
+
+CPUS=$NCPUS
+NODES=1
+#CPUS=4
+#let NODES=NCPUS/CPUS
+#let T=NODES*CPUS
+#if [ $T -lt $CPUS ]; then
+#        let NODES=$NODES+1;
+#fi
+#
+
+let MEMORY=MEMORY/NODES
+
+#if [ ${NCPUS} == "1" ]; then
+#	NODES=1
+#	CPUS=1
+#fi
+
+
+# Default
+if [ "$WALLTIME" == "" ]; then WALLTIME=48; fi
+
+# Impose Walltime limits
+if [ "$WALLTIME" -lt "1" ]; then WALLTIME=1; fi
+#if [ "$WALLTIME" -gt "72" ]; then WALLTIME=72; fi
+
+
+QUEUE="pqchem"
+
+echo "
+#!/bin/sh
+
+# Ignore anything the user may have specified
+#PBS -q ${QUEUE}
+#PBS -l select=${NODES}:ncpus=${CPUS}:mpiprocs=${CPUS}:mem=${MEMORY}MB
+#PBS -l walltime=${WALLTIME}:00:00
+#PBS -o ${HOME}/${STAGING_DIR}/stdout
+#PBS -e ${HOME}/${STAGING_DIR}/stderr
+
+export PATH=$PATH:$HOME/uportal-scripts/bin:/apps/scan-scripts/pqchem
+
+
+cd ${HOME}/${STAGING_DIR}
+run_${APPLICATION}
+" > jobscript_${JOB_SUFFIX}
+
+
+
+# Submit the job and capture the job id
+
+JID=`${PBS_DIR}/qsub jobscript_${JOB_SUFFIX}`
+
+
+
+if [ "$JID" != "" ]; then
+        echo $JID > batchid
+        echo $JID
+else
+        echo '!' > batchid
+        echo "-1";
+fi
+

@@ -1,0 +1,16 @@
+#!/bin/sh
+
+D=`dirname $0`
+
+echo "<configuration>";
+#run_gaussian_8_g09-c01_47000
+for T in ${D}/run_*_*_*_* ${HOME}/uportal-scripts/bin/run_*_*_*_*; do
+		if [ "`basename ${T}`" != "run_app" ]; then
+			if [ -e ${T} ]; then
+				${T} -h
+			fi
+		fi
+	done
+
+echo "</configuration>"
+

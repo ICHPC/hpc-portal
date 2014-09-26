@@ -1,0 +1,6 @@
+#!/bin/bash
+. /etc/profile.d/module*.sh
+module load figshare
+TYPE=$2
+submit-${TYPE} $1 $3 $4 $5 $6 "$7" > $1/publish-error 2>&1
+grep -e "^DOI:" $1/publish-error

@@ -1,0 +1,80 @@
+#!/bin/bash
+
+
+testf() {
+	for T in $*; do
+		if [ ! -e $T ]; then
+			echo "File $T does not exist"
+			exit 1
+		fi
+	done
+}
+
+cd $1
+
+
+ln -s input-0 input.gjf
+ln -s output-1.fchk.gz  checkpoint.fchk.gz
+ln -s output-0 logfile.log
+ln -s output-3 inchi.txt
+ln -s output-4 smiles.txt
+
+/apps/scan-scripts/pqchem/lookup_inchikey.sh `cat inchi.txt | sed "s/Inchi[Key]*=//g" ` | sed 's/ /_/g' | sort  | uniq  > links
+
+. /etc/profile.d/module.sh
+module load openbabel/2.3.0
+
+babel -i g09 output-0  -o pdb structure.pdb
+
+testf input.gjf checkpoint.fchk.gz logfile.log inchi.txt 
+
+
+STOICH=`grep Stoi logfile.log  | head -1 | sed "s/Stoichiometry//g" | sed "s/\s*//g" | sort | uniq `
+
+if [ "$STOICH" == "" ] ;then
+#	echo "Stoichiometry not found"
+	exit 2
+fi
+
+let S=0
+for T in xxxxxx *.xml; do
+	if [ -e $T ]; then
+		F=xml-$S.cml
+		ln -s $T $F
+		CML="$CML -f $F"
+		let S=S+1
+	fi
+done
+
+for T in `cat links`; do
+	LINKS="$LINKS -l $T"
+done
+
+INCHI=`head -1 inchi.txt`
+INCHIKEY=`tail -1 inchi.txt`
+SMILES=`head -1 smiles.txt`
+
+R=""
+for ROUTE in `grep -e "^ #" logfile.log  | sed "s/^ # //" | sort | uniq `; do
+	R="$R -g $ROUTE"
+done
+
+
+/apps/scan-scripts/pqchem/publish_figshare.py \
+		-f input.gjf \
+		$CML \
+		$LINKS \
+		-f checkpoint.fchk.gz \
+		-f logfile.log \
+		-f structure.pdb \
+		-t "Gaussian Job Archive for $STOICH" \
+		-d "Gaussian Job Archive" \
+		-g "$INCHI" \
+		-g "$INCHIKEY" \
+		-g "$SMILES" \
+		-g "$STOICH" $R \
+		-k $2 \
+		-s $3 \
+	  -c 37
+
+

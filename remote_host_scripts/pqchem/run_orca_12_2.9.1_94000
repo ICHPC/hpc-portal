@@ -1,0 +1,155 @@
+#!/bin/bash
+
+# INPUT
+# 0 Gaussian input file
+# 1 Formatted checkpoint file (optional)
+
+# OUTPUT
+# 0 Stdout
+# 1 Formatted checkpoint file
+# 2 CML
+# 3 INCHI
+# 4 METS archive
+
+if [ "$1" == "-h" ]; then
+	echo "	<application description=\"Orca 2.9.1, 12px, 96GB\" script='orca_parallel' memory=\"95000\" ncpus=\"12\" walltime=\"72\">"
+	echo "		<input index=\"0\" mimetype=\"text/plain\" description=\"Orca Input file\" />";
+	echo "		<output index=\"0\" mimetype=\"text/plain\" description=\"Orca Log File\" filename=\"log_{ID}.out\" />";
+        echo "          <output index=\"1\" mimetype=\"chemical/x-cml\" description=\"CML\" filename=\"cml_{ID}.xml\" />";
+        echo "          <output index=\"2\" mimetype=\"chemical/x-inchi\" description=\"INCHI\" filename=\"inchi_{ID}.txt\" />";
+        echo "          <output index=\"3\" mimetype=\"chemical/x-smiles\" description=\"SMILES\" filename=\"smiles_{ID}.txt\" />";
+        echo "          <output index=\"4\" mimetype=\"application/x-mets-archive\" description=\"METS Archive\" filename=\"mets_{ID}.zip\" />";
+
+	echo "	</application>"
+exit 0
+fi
+
+# Create the ouput files here
+# Condor will re-run the job if it can't find all the output files expected
+for T in `seq 0 6`; do
+	/bin/touch output-$T
+done;
+
+
+START_TIME=`date +%s`
+
+echo "COMPLETED" > status
+
+if [ "${HOME}" == "" ]; then
+	export HOME=/tmp
+fi;
+
+export PATH=$PATH:/bin:/usr/bin
+
+. /etc/profile.d/module.sh
+
+module load openbabel
+module load java
+module load mets-writer
+module load intel-suite
+module load orca
+module load intel-suite
+
+export PATH=$PATH:/apps/openmpi/1.3.3/bin
+
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+
+cp input-0 mjh
+
+# Get the amount of memory present on this system and resuce it by 200MB
+
+#MEM=`/bin/grep MemTotal /proc/meminfo | /bin/cut -b 10-19 | /bin/sed "s/ //g" | /bin/awk '{print $1-200}'`
+
+MEM=95000
+
+# Force gaussian to put its temp files in the cwd and not /tmp
+export GAUSS_SCRDIR=${PWD}
+
+
+echo "Running Orca"
+/bin/date
+
+
+# Process the input file to set memory and CPU count appropriately
+/usr/bin/dos2unix -c mac -n input-0 tmp3
+
+
+/bin/cat tmp3 > input-0
+
+
+
+echo "No summary" > summary
+
+# Do everything in the temporary directory so the local disk gets used for the files
+
+TDIR=$PWD
+
+cd $TMPDIR
+
+# the mpirun is funny about paths
+ln -s $ORCA_HOME orca
+
+cp $TDIR/input-0 .
+
+$ORCA_HOME/orca  input-0 > $TDIR/output-0
+
+rm *tmp
+cp * $TDIR
+cd $TDIR
+
+babel -i xyz input-0.xyz  -o cml output-1
+# Make inchi
+babel -i xyz input-0.xyz -o inchi output-2
+
+# Make and add an inchikey
+
+inchi_addkey -n output-2
+grep InChIKey InChIKeys.txt >> output-2
+
+# Make SMILES form
+babel -i xyz input-0.xyz -o smi - 2>/dev/null | /bin/cut -f1 > output-3
+
+
+
+echo "Creating METS package"
+
+
+DATE=` date +%Y-%M-%d`
+USER=`cat user`
+
+# Create the metadata input for the METS writer
+
+FOAF=`cat foaf`
+
+echo "type=Orca job archive 
+title=Orca simulation
+identifier=
+license=http://www.closed.com
+rights=${USER}
+experimentDate=${DATE}
+publisher=Imperial College London
+contributor=${USER}
+creator=${USER}" > metadata.txt
+
+if [ "$FOAF" != "" ]; then
+	echo "foaf=$FOAF" >> metadata.txt
+fi
+
+#export CLASSPATH=$CLASSPATH:/home/mjharvey/mets-generator
+
+
+METSWriter -i input-0 text/plain input.dat \
+           -i output-0 text/plain output.dat \
+           -i output-1 chemical/x-cml cml.xml \
+           -i output-2 chemical/x-inchi inchi.txt \
+           -i output-3 chemical/x-smiles smiles.txt \
+	   -i project  x-uportal/x-project project.txt  \
+	   -i description x-uportal/x-description  description.txt \
+           -o output-4 -m metadata.txt
+
+END_TIME=`date +%s`
+
+let "WALLTIME=${END_TIME}-${START_TIME}"
+
+echo ${WALLTIME} >  walltime

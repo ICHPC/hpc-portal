@@ -1,0 +1,10 @@
+#!/bin/sh
+ARGS=$*
+B=`basename $0`
+IFS=_
+set -- $B
+NCPUS=$3
+VERSION=$4
+unset IFS
+B=`echo $B | sed "s/run_//g"`
+/apps/scan-scripts/pqchem/gaussian $ARGS $B $NCPUS $VERSION

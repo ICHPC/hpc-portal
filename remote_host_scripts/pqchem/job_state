@@ -1,0 +1,66 @@
+#!/bin/sh
+
+
+STAGING_DIR=$1
+
+export PBS_DIR=/usr/pbs/bin/
+
+STATE="C"
+
+# get job state
+
+if [ -e "${STAGING_DIR}/batchid" ]; then 
+	JID=`cat ${STAGING_DIR}/batchid`
+
+	if [ "$JID" == "?" ]; then
+		STATE="?"
+	else 
+		if [ "$JID" == "!" ]; then
+			STATE="!"
+		else
+
+			STATE=`${PBS_DIR}/qstat ${JID} | tail -1 | cut -b63-63 2> /dev/null`
+		fi
+	fi
+
+	if [ "$STATE" == "" ]; then
+		echo "C"
+		STATE="C"
+	elif [ "$STATE" == "Q" ]; then
+		echo "I"
+		STATE="I"
+	else
+		echo $STATE
+	fi
+else
+	echo "!"
+fi
+
+if [ -e "$1/substatus" ]; then
+	head -1 "$1/substatus"
+else
+	echo ""
+fi	
+echo ""
+
+if [ "$STATE" == "C" ]; then
+	echo -n "Walltime:"
+	if [ -e ${STAGING_DIR}/walltime ]; then
+		cat ${STAGING_DIR}/walltime
+	else
+		echo "-1";
+	fi
+	
+fi
+
+# states may be
+# U unexpanded: never run
+# H on hold
+# R running
+# I idle
+# C completed
+# X removed
+# ! failed
+# ? not queued
+
+

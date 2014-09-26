@@ -1,0 +1,25 @@
+#!/bin/sh
+
+#deletes the working directory specified and deletes the condor job with id $2
+
+PBS_DIR=/usr/pbs/bin/
+
+if [ $# != 1  ]; then 
+        exit; 
+fi;
+
+# End job
+if [ -e "$1/batchid" ]; then 
+	ID=`cat "$1/batchid" | sed "s/\.//"`;
+	echo $ID
+	${PBS_DIR}/qdel $ID
+fi; 
+
+# Remove working directory
+# Leave a marker in case the directory isn't removed because of locked files 
+
+echo "Deleted" > "$1"/status 2> /dev/null
+
+touch "$1"/.delete 2>&1 | tee > /dev/null
+rm -rf "$1" 2> /dev/null
+
