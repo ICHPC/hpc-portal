@@ -1,0 +1,86 @@
+
+	1. Requirements.
+A webserver.  It's been tested with apache 2.x, so some fairly modern version of that will be fine.
+PHP.  There's nothing modern or fancy in the UPortal parts.  Let's say PHP 5.x.
+ssh, scp and ssh-keygen.
+A Postgresql database server (this doesn't have to be on the same machine).
+Smarty (the PHP template engine).  Version 2.x or 3.x.
+OpenBabel
+
+	2. Choose an installation location
+Untar the UPortal tarball.  E.g.:
+(as non-httpd user)
+mkdir /opt/portal
+cd /opt/portal
+tar zxvf /path/to/uportal.tgz
+	3. Create the UPortal database
+Logged in as a postgresql admin (e.g. postgres) on the DB server machine run the commands below.  Enter a password when prompted, and note it down.
+createuser -D -R -S -E -P uportal
+createdb -O uportal uportal
+If you are using different names for the database or DB user then substitute as appropriate.
+
+	4. Load the UPortal database schema
+Run the following command from the uportal directory.  You will be prompted for the uportal password you just created.  If the database is running on a different machine, substitute for localhost.
+psql -U uportal -h localhost -W < db-schema/schema
+This should proceed without (major) errors.
+	5. Configure the webserver.
+The webserver must be able to run PHP, and to recognise index.php as a valid index.
+Set a Directory to point to the UPortal html directory.  The only option needed is 'Indexes'.  If you are using https, set a rewrite rule here (see example).  Make sure the webserver user can read the html, config, and uportal directories, and their subdirectories and files.  Make sure the webserver user can write to the html/templates_c directory.
+Alias /portal "/opt/portal/html"
+<Directory "/opt/portal/html">
+
+    Options Indexes FollowSymLinks
+
+    AllowOverride None
+
+    Order allow,deny
+    Allow from all
+
+    RewriteEngine on
+    RewriteCond %{HTTPS} ^off$
+    RewriteRule .* https://%{SERVER_NAME}%{REQUEST_URI} [R=permanent,L]
+
+</Directory>
+
+	6. Install or locate Smarty
+UPortal will work with Smarty version 2 or 3.
+If you do not have Smarty installed via your distribution's package system then download and install it. 
+	7. Create a directory for the SSH keys
+This must be somewhere the httpd user can write to.  It must NOT be readable or writeable by other users on the system.
+e.g.
+mkdir /opt/portal/ssh-keys
+chown apache /opt/portal/ssh-keys
+chmod 700 /opt/portal/ssh-keys
+	8. Create a directory for the Smarty compiled templates
+This must be somewhere the httpd user can write to.  It should NOT be readable or writeable by other users.  E.g.
+mkdir /opt/portal/templates_c
+chown apache /opt/portal/templates_c
+chmod 700 /opt/portal/templates_c
+
+	9. Configure UPortal
+Edit the files in the config directory.  The configuration2.inc file is well commented but some sections are explained below.
+
+The configuration2.inc file
+
+The first section details how errors should be handled.  Unless you are debugging you can leave most as they are.  If you want errors to be sent to the webserver's error log then set log_errors to 1.  If you want to log errors to your own file set it in error_log.
+
+Next you must provide the location of Smarty.  If it is installed by your package system then the default will be fine.  If you have installed Smarty yourself then enter the location of the Smarty.class.php file here.
+
+Change the admin email and name options.  This is what the users will see on the login page and on error pages.
+
+The authentication section sets how UPortal will authenticate users.  Options are ldap or file (or both).  Set which you are using in auth_methods.  If you have more than one then you must set auth_type to either permissive or strict.  Permissive means any of the auth_methods must recognise the user and password, strict means all methods must succeed.  Permissive might be useful if you want to allow additional users who are not in some institutional LDAP directory.
+
+If using ldap set the ldap_host, ldap_port and ldap_basedn according to your institution's setup.  If using file then create a file (outside the html directory!) and provide its location in file_location.  The format should be:
+
+username:Full Name:hashed_password
+
+Fill in the details for the Postgresql server in the next section.
+
+Set the locations of the dspace and chempound importers.  They are in uportal/uportal-config/bin
+
+Set your institution's dpsace server, institutional ORCID and institutional figshare credentials here.
+
+Set the locations of the ssh-keys and templates_c directories you created in steps 7 and 8.
+
+If you are not using HTTPS then set protocol to http.  Note that when a user logs in the username and password will be sent in the clear if you do this.
+
