@@ -1,7 +1,8 @@
 <?php
 
-require '../uportal/uportal-config/uportal-functions2.inc';
-require '../uportal/uportal-config/dspace-functions.inc';
+set_include_path(get_include_path() . PATH_SEPARATOR . '../config' . PATH_SEPARATOR . '../uportal/uportal-config');
+require 'uportal-functions2.inc';
+require 'dspace-functions.inc';
 
 $smarty = new Smarty;
 
