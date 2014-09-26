@@ -12,11 +12,21 @@
 ###   php.ini file.
 
 ###############################################################################
-### Error reporting.  Uncomment one of these
+### Error reporting.
 ## Show no errors.  No information leaks to outside world if an error occurs.
-# ini_set('error_reporting', 0);
+# ini_set('error_reporting', 1);
+ini_set('error_reporting', 0);
 ## Show all errors.  Use for debugging only.
-ini_set('error_reporting', E_ALL);
+#ini_set('error_reporting', E_ALL);
+
+###############################################################################
+### Where errors go.  Uncomment suitably.
+## Display all errors in browsers
+ini_set('display_errors', 0);
+## Send errors to web error log
+ini_set('log_errors', 1);
+## Send errors to a file
+ini_set('error_log', '/opt/portal/error.log');
 
 ###############################################################################
 ### Smarty template engine.  Either version 2 or 3 should work.
@@ -27,15 +37,6 @@ require('Smarty/Smarty.class.php');
 ## Otherwise use this option, replacing the path with the path to
 ## your locally installed Smarty.
 # require('/usr/local/share/php/Smarty/Smarty.class.php');
-
-###############################################################################
-### Where errors go.  Uncomment suitably.
-## Display all errors in browsers
-ini_set('display_errors', 1);
-## Send errors to web error log
-ini_set('log_errors', 1);
-## Send errors to a file
-ini_set('error_log', '/opt/portal-devel/error.log');
 
 ###############################################################################
 ### Local admin options
@@ -52,7 +53,7 @@ $UP_config['ldap_port'] = NULL;
 $UP_config['ldap_basedn'] = array('ou=chemistry,dc=ic,dc=ac,dc=uk', 'ou=hpc,dc=ic,dc=ac,dc=uk' );
 
 ## File authentication.  Location of file.
-$UP_config['file_location'] = '/opt/portal-devel/deploy/uportal/uportal-config/password.txt';
+$UP_config['file_location'] = '/opt/portal/password.txt';
 
 ## Which authentication methods to use.  Can use: ldap and/or file.
 $UP_config['auth_methods'] = 'file';
@@ -92,8 +93,8 @@ $UP_config['remote_rm'] = '/bin/rm';
 
 ###############################################################################
 ### Local UPortal commands
-$UP_config['dspace_importer']= "/var/www/uportal/uportal-config/bin/lniimport";
-$UP_config['chempound_importer']= "/var/www/uportal/uportal-config/bin/qc";
+$UP_config['dspace_importer']= "/opt/portal/uportal/uportal-config/bin/lniimport";
+$UP_config['chempound_importer']= "/opt/portal/uportal/uportal-config/bin/qc";
 
 ###############################################################################
 ##  Remote UPortal commands
@@ -128,8 +129,8 @@ $UP_config['figshare_secret'] = 'XXXXXXXXXXXXXXXXXXXXXX'; // this is your secret
 #  Non-webserver users should NOT be able to write files here.
 #  The best solution is to set the directory owned by the webserver and have
 #   the permissions 700
-$UP_config['ssh_keydir'] = '/opt/portal-devel/deploy/keys';
-$UP_config['smarty_compile_dir'] = '/opt/portal-devel/deploy/html/templates_c';
+$UP_config['ssh_keydir'] = '/opt/portal/ssh-keys';
+$UP_config['smarty_compile_dir'] = '/opt/portal/templates_c';
 
 ## Temporary directory location on webserver
 $UP_config['tempdir'] = '/tmp/';
