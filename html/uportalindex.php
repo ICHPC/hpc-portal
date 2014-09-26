@@ -11,6 +11,7 @@ $smarty->cache_lifetime = 0;
 $smarty->compile_check = true;
 $smarty->debugging = false;
 $smarty->force_compile = true;
+$smarty->compile_dir = $UP_config['smarty_compile_dir'];
 
 session_start();
 
