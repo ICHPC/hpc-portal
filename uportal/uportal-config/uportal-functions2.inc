@@ -54,7 +54,6 @@ function authenticate($user, $password)
 
             case 'ldap':
             $gc = ldap_authenticate($user, $password);
-            print "doing ldap\n";
             break;
 
             #SJC FIXME

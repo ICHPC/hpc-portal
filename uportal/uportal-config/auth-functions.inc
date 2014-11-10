@@ -13,7 +13,7 @@ function ldap_authenticate( $user, $password ) {
         if ($r) {
             $result = @ldap_get_entries( $ds, $r);
 
-            if ($result[0]) {
+            if (array_key_exists(0,$result) && $result[0]) {
                 if (@ldap_bind( $ds, $result[0]['dn'], $password) ) {
                         # SJC: unbind
 						return  ($result[0]['gecos'][0] );
