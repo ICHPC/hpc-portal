@@ -124,13 +124,13 @@ function new_get_job_list( $user, $order, $limit, $orderdir=0, $project_id=-1, $
         $values[] = "%$filter%";
     }
 
-    $query .= " ORDER BY ? ";
+    $query .= " ORDER BY "; # can't use prepared statements here
     if( isset($order) && $order >=0 && $order < count($orderby) )
     {
         #$orderbystr = $orderby[$order];
-        $values[] = $orderby[$order];
+        $query .= $orderby[$order];
     } else {
-        $values[] = $orderby[0];
+        $query .= $orderby[0];
     }
     if( $orderdir==0 )
     {
@@ -151,9 +151,11 @@ function new_get_job_list( $user, $order, $limit, $orderdir=0, $project_id=-1, $
 
     $list = array();
     $allarr  = db_query_all( $query, $values );
+#echo $query;
+#print_r($values);
+#print_r($allarr);
 
     if( !empty($allarr) ) {
-//echo $query;
 
         #while( $arr != NULL ) {
         foreach ($allarr as $arr) {
