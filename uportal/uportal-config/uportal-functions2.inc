@@ -1,7 +1,5 @@
 <?
 
-require_once('domxml-php4-to-php5.php');
-
 require_once 'configuration2.inc';
 require_once 'auth-functions.inc';
 require_once 'db-functions.inc';
@@ -1752,24 +1750,25 @@ function pool_table_update( $apps, $pool_id ) {
 }
 
 function pool_status_xml_parse( $arr ) {
-    $dom = domxml_open_mem( $arr );
 
-    if( !$dom ) {
+    $dom = new DomDocument();
+
+    if( !$dom->loadXML( $arr ) ) {
         return 'No XML found';
     }
 
 
-    $apps = $dom->get_elements_by_tagname('host');
+    $apps = $dom->getElementsByTagName('host');
 
     $error = NULL;
 
     $statusx=array();
 
     foreach( $apps as $app ) {
-        $hostname = sanify( $app->get_attribute('hostname')  );
-        $memory   = (int) $app->get_attribute('memory');
-        $ncpus    = (int) $app->get_attribute('ncpus');
-        $status   = sanify( $app->get_attribute('status')  );
+        $hostname = sanify( $app->getAttribute('hostname')  );
+        $memory   = (int) $app->getAttribute('memory');
+        $ncpus    = (int) $app->getAttribute('ncpus');
+        $status   = sanify( $app->getAttribute('status')  );
 
         $statusx[] = array ( 'hostname' => $hostname, 'memory' => $memory, 'ncpus' => $ncpus, 'status' => $status );
     }
@@ -1779,25 +1778,25 @@ function pool_status_xml_parse( $arr ) {
 
 function pool_xml_parse( $arr ) {
 
-    $dom = domxml_open_mem( $arr );
+    $dom = new DomDocument();
 
-    if( !$dom ) {
+    if( !$dom->loadXML( $arr ) ) {
         return 'No XML found';
     }
 
     $applist= array();
 
-    $apps = $dom->get_elements_by_tagname('application');
+    $apps = $dom->getElementsByTagName('application');
 
     $error = NULL;
 
     foreach( $apps as $app ) {
 
-        $script = sanify( $app->get_attribute('script')  );
-        $app_description = sanify( $app->get_attribute('description')  );
-        $ncpus= (int) $app->get_attribute('ncpus');
-        $memory=(int) $app->get_attribute('memory');
-        $walltime =(int) $app->get_attribute('walltime');
+        $script = sanify( $app->getAttribute('script')  );
+        $app_description = sanify( $app->getAttribute('description')  );
+        $ncpus= (int) $app->getAttribute('ncpus');
+        $memory=(int) $app->getAttribute('memory');
+        $walltime =(int) $app->getAttribute('walltime');
 
 
 
@@ -1811,13 +1810,13 @@ function pool_xml_parse( $arr ) {
 
         $inp = array();
 
-        $inputs = $app->get_elements_by_tagname( 'input' );
+        $inputs = $app->getElementsByTagName( 'input' );
 
         foreach( $inputs as $input ) {
-            $mimetype   = sanify( $input->get_attribute( 'mimetype' ) );
-            $description= sanify( $input->get_attribute( 'description' ) );
-            $index      = (int) $input->get_attribute( 'index' );
-            $required   = sanify( $input->get_attribute( 'required' ) );
+            $mimetype   = sanify( $input->getAttribute( 'mimetype' ) );
+            $description= sanify( $input->getAttribute( 'description' ) );
+            $index      = (int) $input->getAttribute( 'index' );
+            $required   = sanify( $input->getAttribute( 'required' ) );
 
             if( empty ( $required ) ) { $required = "yes"; }
 
@@ -1833,13 +1832,13 @@ function pool_xml_parse( $arr ) {
 
         $oup = array();
 
-        $outputs = $app->get_elements_by_tagname( 'output' );
+        $outputs = $app->getElementsByTagName( 'output' );
 
         foreach( $outputs as $output ) {
-            $mimetype    = sanify( $output->get_attribute( 'mimetype' ) );
-            $description = sanify( $output->get_attribute( 'description' ) );
-            $index       = (int) $output->get_attribute( 'index' );
-            $filename    = sanify( $output->get_attribute( 'filename' ) );
+            $mimetype    = sanify( $output->getAttribute( 'mimetype' ) );
+            $description = sanify( $output->getAttribute( 'description' ) );
+            $index       = (int) $output->getAttribute( 'index' );
+            $filename    = sanify( $output->getAttribute( 'filename' ) );
 
             if( empty ( $mimetype    ) ) { $error = "No mimetype (output)"   ; }
             if( empty ( $description ) ) { $error = "No description (output)"; }
