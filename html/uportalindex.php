@@ -278,7 +278,6 @@ if(1) {
 
         $num_users_jobs = new_get_job_list( $_SESSION['username'] , $orderby, 0, $orderdir, $projectid, 0, $filter, $status, $published, $submittime, 1 );
 
-        echo "$num_users_jobs";
         if( isset($_REQUEST['page']) ) {
             $r_page = sanify( $_REQUEST['page'] );
             $page = $_SESSION['page'];
