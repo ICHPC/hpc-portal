@@ -11,33 +11,64 @@
 
 <h2>View by Project</h2>
 
-<form>
+<form>Project:
 <select name="byproject">
-<option label="{$defaultprojectname}" value="{$defaultprojectid}">{$defaultprojectname}</option>
-{html_options values=$project_idx  output=$projects}
+{html_options values=$project_idx  output=$projects selected=$defaultprojectidx}
 </select>
-Filter <input type="textfield" name="filter" size="50" value="{$defaultfilter}">
-<input type="hidden" name="action" value="joblist">
-<input type="hidden" name="subaction" value="appinput">
+Description contains:
+<input type="textfield" name="filter" size="50" value="{$defaultfilter}">
 
 <p>
-<input type="Submit" value="Continue" >
 
+Published:
+<select name="published">
+{html_options options=$publisheds selected=$published}
+</select>
+
+Status:
+<select name="status">
+{html_options options=$statuses selected=$status}
+</select>
+
+Submission time:
+<select name="submittime">
+{html_options options=$submittimes selected=$submittime}
+</select>
+<p>
+
+Items per page <select name="numperpage">
+{html_options values=$numperpages output=$numperpages selected=$defnumperpage}
+</select>
+
+<p>
+<input type="hidden" name="action" value="joblist">
+<input type="hidden" name="subaction" value="appinput">
+<input type="Submit" value="Filter" >
 </form>
-
 
 	<table width="100%">
 	<tr>
-	<td align="left">
+    <td align="left">
+		<a href="?action=joblist&page=1">First</a>
 		{if $suppress_prev != "1" }
 		<a href="?action=joblist&page=prev">Previous</a>
 		{/if}
 	</td>
+    <td align="center">
+        {section loop=$avail_pages name=pag}
+        {if $page == $avail_pages[pag]}
+            {$avail_pages[pag]}
+        {else}
+            <a href="?action=joblist&page={$avail_pages[pag]}">{$avail_pages[pag]}</a>
+        {/if}
+        {/section}
+    </td>
 	<td align="right">
 		{if $suppress_next != "1" }
 		<a href="?action=joblist&page=next">Next</a>
 		{/if}
-	</td>
+		<a href="?action=joblist&page=last">Last</a>
+    </td>
 	</tr>
 	</table>
 

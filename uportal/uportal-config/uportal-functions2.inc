@@ -100,15 +100,53 @@ function get_next_job_id() {
 
 }
 
-function new_get_job_list( $user, $order, $limit, $orderdir=0, $project_id=-1, $offset=0, $filter="" ) {
+function new_get_job_list( $user, $order, $limit, $orderdir=0, $project_id=-1, $offset=0, $filter="",
+                            $status=0, $published=0, $submittime=0, $countonly=0 ) {
     $uid = get_uid( $user );
     $values = array($uid);
 
     $statidx = array ('I' => 'Pending', 'R' => 'Running', 'C' => 'Finished', 'X' => 'Deleted', 'U'=>'Pending', 'H' => 'Paused', '?' => 'Not Queued', '!' => 'Failed' );
+    $statq = array( 'I', 'R', 'C', 'O' );
 
     $orderby = array ( 'job_id' , 'a.app_id' , 'submit_time', 'wall_time',  'status', 'is_published' );
 
-    $query = "SELECT a.*, b.app_id, b.app_name FROM job_list a, app_list b WHERE user_id = ? AND deleted=false AND a.app_id = b.app_id";
+    if ( $countonly == 0 ) {
+        $query = "SELECT a.*, b.app_id, b.app_name FROM job_list a, app_list b WHERE user_id = ? AND deleted=false AND a.app_id = b.app_id";
+    } else {
+        $query = "SELECT COUNT(*) FROM job_list a, app_list b WHERE user_id = ? AND deleted=false AND a.app_id = b.app_id";
+    }
+
+    if ( $submittime > 0 ) {
+    # Ah, sorry MySQL.  Blame lack of standards.
+        $query .= " AND (CURRENT_TIMESTAMP -";
+        switch ( $submittime ) {
+            case 1:
+                $query .= " INTERVAL '1 HOUR'";
+                break;
+            case 2:
+                $query .= " INTERVAL '1 DAY'";
+                break;
+            case 3:
+                $query .= " INTERVAL '1 WEEK'";
+                break;
+            default:
+                $query .= " INTERVAL '1 MONTH'";
+                break;
+        }
+        $query .= ") <= submit_time";
+    }
+
+    if ( $published == 1 ) $query .= " AND is_published = true";
+    if ( $published == 2 ) $query .= " AND is_published = false";
+
+    if ( $status > 0 ) {
+        if ( $status < 4 ) {
+            $query .= " AND status = ?";
+            $values[] = $statq[$status-1];
+        } else {
+            $query .= " AND NOT (status = 'I' OR status = 'R' OR status = 'C')";
+        }
+    }
 
     if ( $project_id > -1 ) {
         $query .= " AND project_id = ?";
@@ -124,36 +162,45 @@ function new_get_job_list( $user, $order, $limit, $orderdir=0, $project_id=-1, $
         $values[] = "%$filter%";
     }
 
-    $query .= " ORDER BY "; # can't use prepared statements here
-    if( isset($order) && $order >=0 && $order < count($orderby) )
-    {
-        #$orderbystr = $orderby[$order];
-        $query .= $orderby[$order];
-    } else {
-        $query .= $orderby[0];
-    }
-    if( $orderdir==0 )
-    {
-        $query .=' ASC';
-        $otherdir=1;
-    } else {
-        $query .=' DESC';
-        $otherdir=0;
+    if ( $countonly == 0 ) {
+        $query .= " ORDER BY "; # can't use prepared statements here
+        if( isset($order) && $order >=0 && $order < count($orderby) )
+        {
+            #$orderbystr = $orderby[$order];
+            $query .= $orderby[$order];
+        } else {
+            $query .= $orderby[0];
+        }
+        if( $orderdir==0 )
+        {
+            $query .=' ASC';
+            $otherdir=1;
+        } else {
+            $query .=' DESC';
+            $otherdir=0;
+        }
     }
 
-    $query .= " LIMIT ?";
-    $values[] = $limit;
+    if ( $limit > 0 ) {
+        $query .= " LIMIT ?";
+        $values[] = $limit;
+    }
     $query .= " OFFSET ?";
     $values[] = $offset;
 
 
 #echo "<!-- $query -->";
-
-    $list = array();
-    $allarr  = db_query_all( $query, $values );
 #echo $query;
 #print_r($values);
 #print_r($allarr);
+
+    $list = array();
+    if ( $countonly == 0 ) {
+        $allarr  = db_query_all( $query, $values );
+    } else {
+        $arr  = db_query( $query, $values );
+        return $arr['count'];
+    }
 
     if( !empty($allarr) ) {
 

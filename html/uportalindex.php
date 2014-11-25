@@ -237,22 +237,12 @@ if(1) {
     break;
     case 'joblist':
         if( !isset( $_SESSION['page'] )) { $_SESSION['page']=0; }
-        if( !isset( $_SESSION['items_per_page'] )) { $_SESSION['items_per_page']=10; }
 
-        if( isset($_REQUEST['page']) ) {
-            $r_page = sanify( $_REQUEST['page'] );
-            $page = $_SESSION['page'];
-            switch( $r_page ) {
-                case 'prev':
-                    $page--; if($page<0) { $page=0; }
-                break;
-                case 'next':
-                    $page++;
-                break;
-            }
-            $_SESSION['page']= $page;
+        if( !isset( $_SESSION['items_per_page'] )) { $_SESSION['items_per_page']=10; }
+        if( isset($_REQUEST['numperpage']) ) {
+            $npp = (int) $_REQUEST['numperpage'];
+            if( $npp > 0 ) $_SESSION['items_per_page'] = $npp;
         }
-        $page = $_SESSION['page'];
         $items_per_page = $_SESSION['items_per_page'];
 
         switch( strtolower( sanify( $_REQUEST['subaction'] ) ) ) {
@@ -263,11 +253,17 @@ if(1) {
         if( isset($_REQUEST['orderby']) )  { $orderby   = $_SESSION['orderby']    = (int) $_REQUEST['orderby']; }
         if( isset($_REQUEST['byproject']) ){ $projectid = $_SESSION['orderby_project_id'] = (int) $_REQUEST['byproject']; }
         if( isset($_REQUEST['filter']) ){ $projectid = $_SESSION['filter'] = sanify( $_REQUEST['filter'] ); }
+        if( isset($_REQUEST['status']) )  { $status   = $_SESSION['status']    = (int) $_REQUEST['status']; }
+        if( isset($_REQUEST['published']) )  { $published   = $_SESSION['published']    = (int) $_REQUEST['published']; }
+        if( isset($_REQUEST['submittime']) )  { $submittime   = $_SESSION['submittime']    = (int) $_REQUEST['submittime']; }
 
         $orderdir = ( isset($_SESSION['orderdir']) ? $_SESSION['orderdir'] : '' );
         $orderby  = ( isset($_SESSION['orderby']) ? $_SESSION['orderby'] : '' );
         $projectid = ( isset($_SESSION['orderby_project_id']) ? $_SESSION['orderby_project_id'] : '' ); # -1;
         $filter    = ( isset($_SESSION['filter']) ? $_SESSION['filter'] : '' );
+        $status  = ( isset($_SESSION['status']) ? $_SESSION['status'] : 0 );
+        $published  = ( isset($_SESSION['published']) ? $_SESSION['published'] : 0 );
+        $submittime  = ( isset($_SESSION['submittime']) ? $_SESSION['submittime'] : 0 );
 
         if ( !isset($projectid) || !is_int(  $projectid )  ) { $projectid = $_SESSION['orderby_project_id'] = -1; }
         # untaint
@@ -277,29 +273,75 @@ if(1) {
         $projectname = get_project_name( $_SESSION['uid'], $projectid );
         $smarty->assign( "projectname", $projectname );
 
-            if ( $orderdir==0 ) { $orderdir=1;}
-            else {$orderdir=0;}
+        if ( $orderdir==0 ) { $orderdir=1;}
+        else {$orderdir=0;}
+
+        $num_users_jobs = new_get_job_list( $_SESSION['username'] , $orderby, 0, $orderdir, $projectid, 0, $filter, $status, $published, $submittime, 1 );
+
+        echo "$num_users_jobs";
+        if( isset($_REQUEST['page']) ) {
+            $r_page = sanify( $_REQUEST['page'] );
+            $page = $_SESSION['page'];
+            switch( $r_page ) {
+                case 'prev':
+                    $page--; if($page<0) { $page=0; }
+                break;
+                case 'next':
+                    $page++;
+                break;
+                case 'last':
+                # empty pages are fixed later
+                    $page = (int) ($num_users_jobs / $items_per_page) + 1;
+                break;
+                default:
+                    $ir_page = (int) $r_page;
+                    if( $ir_page > 0 ) $page = $ir_page - 1; # since we start at 0
+                break;
+            }
+            $_SESSION['page']= $page;
+        }
+        $page = $_SESSION['page'];
 
         $job_list=array();
         $page++;
         while( sizeof($job_list) == 0 && $page>0 ) {
             $page--;
             $_SESSION['page']=$page;
-            $job_list = new_get_job_list( $_SESSION['username'] , $orderby, $items_per_page, $orderdir, $projectid, $page * $items_per_page, $filter );
+            $job_list = new_get_job_list( $_SESSION['username'] , $orderby, $items_per_page, $orderdir, $projectid, $page * $items_per_page, $filter, $status, $published, $submittime );
         }
 
+        $avail_pages = array();
+        $avail_pages[] = 1;
+        $apage = 2;
+        while( $apage <= ceil($num_users_jobs/$items_per_page) ) {
+            $avail_pages[] = $apage;
+            $apage++;
+        }
+
+        $statuses = array("any", "pending", "running", "finished", "other");
+
+        $publisheds = array( "any", "yes", "no" );
+
+        $submittimes = array( "any", "last hour", "today", "last week", "last month" );
+
+        $numperpages = array( 10, 25, 50, 100 );
+
+        $smarty->assign( "numperpages", $numperpages );
+        $smarty->assign( "defnumperpage", $items_per_page );
+        $smarty->assign( "submittime", $submittime );
+        $smarty->assign( "submittimes", $submittimes );
+        $smarty->assign( "published", $published );
+        $smarty->assign( "publisheds", $publisheds );
+        $smarty->assign( "status", $status );
+        $smarty->assign( "statuses", $statuses );
+        $smarty->assign( "page", $page+1 );
+        $smarty->assign( "avail_pages", $avail_pages );
         $smarty->assign( "job_list", $job_list );
         $smarty->assign( "orderdir", $orderdir );
         $smarty->assign( "orderby", $orderby );
         $smarty->assign( "byproject", $projectid );
         $smarty->assign( "defaultfilter", $filter );
-        $smarty->assign( "defaultprojectid", $projectid );
-        if( $projectid!=-1 ) {
-            $smarty->assign( "defaultprojectname" , $projectname );
-        }
-        else {
-            $smarty->assign( "defaultprojectname" , "-- All --" );
-        }
+        $smarty->assign( "defaultprojectidx" , $projectid );
 
         if( $page==0 ) { $smarty->assign( "suppress_prev", 1 ); };
         if( sizeof($job_list) < $items_per_page ) { $smarty->assign( "suppress_next", 1 ); }
@@ -795,12 +837,6 @@ if(1) {
 
 
         $projectid   = get_project_by_jid( $jid );
-        $projectname = get_project_name( $_SESSION['uid'], $projectid );
-
-
-
-        $c['description'][] = $projectname;
-        $c['project_id' ][] = $projectid;
 
         while(list(,$v)=each($b['description'])) {
             $c['description'][] = $v;
@@ -812,6 +848,7 @@ if(1) {
 
         $smarty->assign( "projects", $c['description'] );
         $smarty->assign( "project_idx", $c['project_id'] );
+        $smarty->assign( "default_project_idx", $projectid );
 
         $smarty->display('editjob.tpl');
 
