@@ -4,8 +4,9 @@ set_include_path(get_include_path() . PATH_SEPARATOR . '../config' . PATH_SEPARA
 require 'uportal-functions2.inc';
 require 'dspace-functions.inc';
 
-$smarty = new Smarty;
+if( version_compare( PHP_VERSION, '5.0.0', '<' ) ) { fatal_error( "Requires PHP 5" ); }
 
+$smarty = new Smarty;
 $smarty->caching = false;
 $smarty->cache_lifetime = 0;
 $smarty->compile_check = true;
