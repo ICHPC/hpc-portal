@@ -1751,12 +1751,12 @@ function pool_table_update( $apps, $pool_id ) {
 
 function pool_status_xml_parse( $arr ) {
 
-    $dom = new DomDocument();
+    if( empty($arr) ) return 'No XML passed in';
 
+    $dom = new DomDocument();
     if( !$dom->loadXML( $arr ) ) {
         return 'No XML found';
     }
-
 
     $apps = $dom->getElementsByTagName('host');
 
@@ -1778,8 +1778,9 @@ function pool_status_xml_parse( $arr ) {
 
 function pool_xml_parse( $arr ) {
 
-    $dom = new DomDocument();
+    if( empty($arr) ) return 'No XML passed in';
 
+    $dom = new DomDocument();
     if( !$dom->loadXML( $arr ) ) {
         return 'No XML found';
     }
