@@ -1,8 +1,7 @@
 <?php
-
-set_include_path(get_include_path() . PATH_SEPARATOR . '../config' . PATH_SEPARATOR . '../uportal/uportal-config');
-require 'uportal-functions2.inc';
-require 'dspace-functions.inc';
+set_include_path(get_include_path() . PATH_SEPARATOR . '../uportal/uportal-config');
+require_once 'uportal-functions2.inc';
+require_once 'dspace-functions.inc';
 
 if( version_compare( PHP_VERSION, '5.0.0', '<' ) ) { fatal_error( "Requires PHP 5" ); }
 
@@ -12,7 +11,7 @@ $smarty->cache_lifetime = 0;
 $smarty->compile_check = true;
 $smarty->debugging = false;
 $smarty->force_compile = true;
-$smarty->compile_dir = $UP_config['smarty_compile_dir'];
+$smarty->compile_dir = $UP_options['smarty_compile_dir'];
 
 session_start();
 
@@ -125,8 +124,8 @@ if( $display_index ) {
     $smarty->assign("motd", get_motd( $_SESSION['username'] ) );
 
     $smarty->assign( "admin_email", get_admin_email() );
-    $smarty->assign( "admin_email_subject", empty($UP_config['admin_email_subject']) ? 'portal email' : $UP_config['admin_email_subject'] );
-    $smarty->assign( "admin_name", empty($UP_config['admin_name']) ? 'the admin' : $UP_config['admin_name'] );
+    $smarty->assign( "admin_email_subject", empty($UP_options['admin_email_subject']) ? 'portal email' : $UP_options['admin_email_subject'] );
+    $smarty->assign( "admin_name", empty($UP_options['admin_name']) ? 'the admin' : $UP_options['admin_name'] );
     $smarty->display( 'index.tpl' );
 }
 
@@ -186,7 +185,7 @@ if(1) {
                     fatal_error( "Unable to publish. Please send the job ID to " . get_admin_email() );
                 }
                 else {
-                    $proto = $UP_config['protocol'];
+                    $proto = $UP_options['protocol'];
                     $host  = $_SERVER['HTTP_HOST'];
                     $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
                     $extra = '?action=joblist';
@@ -214,7 +213,7 @@ if(1) {
         }
         else {
 
-            $proto = $UP_config['protocol'];
+            $proto = $UP_options['protocol'];
             $host  = $_SERVER['HTTP_HOST'];
             $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
             $extra = '?action=joblist';
@@ -820,7 +819,7 @@ if(1) {
                 fatal_error( "You do not own this project" );
             }
             set_job_project( $jid, $project );
-            $proto = $UP_config['protocol'];
+            $proto = $UP_options['protocol'];
             $host  = $_SERVER['HTTP_HOST'];
             $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
             $extra = '?action=joblist';
@@ -861,8 +860,8 @@ if(1) {
         else {
             $smarty->assign("motd", get_motd( $_SESSION['username'] ) );
             $smarty->assign( "admin_email", get_admin_email() );
-            $smarty->assign( "admin_email_subject", empty($UP_config['admin_email_subject']) ? 'portal email' : $UP_config['admin_email_subject'] );
-            $smarty->assign( "admin_name", empty($UP_config['admin_name']) ? 'the admin' : $UP_config['admin_name'] );
+            $smarty->assign( "admin_email_subject", empty($UP_options['admin_email_subject']) ? 'portal email' : $UP_options['admin_email_subject'] );
+            $smarty->assign( "admin_name", empty($UP_options['admin_name']) ? 'the admin' : $UP_options['admin_name'] );
             $smarty->display('index.tpl');
         }
 }

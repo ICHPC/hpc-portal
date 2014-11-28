@@ -12,7 +12,7 @@ require '../uportal/uportal-config/dspace-functions.inc';
 
 session_start();
 
-$proto = $UP_config['protocol'];
+$proto = $UP_options['protocol'];
 $host  = $_SERVER['HTTP_HOST'];
 $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
 if( !array_key_exists( 'uid', $_SESSION ) ) {
@@ -26,15 +26,15 @@ print_r( $_SESSION );
 if( !array_key_exists( 'code', $_GET ) ) {
     $_SESSION["oauthnonce"] = md5(uniqid(rand(), true));
     $redirect_uri = "$proto://$host$uri/orcid-auth.php?state=" . $_SESSION["oauthnonce"];
-    header( 'Location: https://orcid.org/oauth/authorize?client_id=' . $UP_config['orcid_client_id'] .'&response_type=code&scope=/authenticate&redirect_uri=' . $redirect_uri );
+    header( 'Location: https://orcid.org/oauth/authorize?client_id=' . $UP_options['orcid_client_id'] .'&response_type=code&scope=/authenticate&redirect_uri=' . $redirect_uri );
 }
 else {
 //  curl -i -L -H 'Accept: application/json' --data 'client_id=0000-0001-7197-7095&client_secret=2801423d-88b0-4809-b6d8-87eede5ec00c&grant_type=authorization_code&code=MsjXNS' 'https://api.sandbox.orcid.org/oauth/token'
     $req = new HttpRequest( "https://pub.orcid.org/oauth/token", HTTP_METH_POST );
     $req->addHeaders( array("Accept"=> "application/json")  );
     $req->addPostFields ( array(
-            "client_id" => $UP_config['orcid_client_id'],
-            "client_secret" => $UP_config['orcid_client_secret'],
+            "client_id" => $UP_options['orcid_client_id'],
+            "client_secret" => $UP_options['orcid_client_secret'],
             "grant_type" => "authorization_code",
             "code" => $_GET["code"]
         )  );

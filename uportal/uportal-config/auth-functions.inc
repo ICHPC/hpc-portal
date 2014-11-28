@@ -4,12 +4,12 @@ function ldap_authenticate( $user, $password ) {
 
 # SJC: SSL?
 
-		  global $UP_config;
-			for( $i =0; $i< count(  $UP_config['ldap_basedn'] ); $i++ ) {
-        $ds=@ldap_connect($UP_config['ldap_host'],$UP_config['ldap_port']);
+		  global $UP_options;
+			for( $i =0; $i< count(  $UP_options['ldap_basedn'] ); $i++ ) {
+        $ds=@ldap_connect($UP_options['ldap_host'],$UP_options['ldap_port']);
         # SJC check for failures
-        $r = @ldap_search( $ds, $UP_config['ldap_basedn'][$i], 'uid=' . $user );
-#print "<P>Trying ".$UP_config['ldap_basedn'][$i];
+        $r = @ldap_search( $ds, $UP_options['ldap_basedn'][$i], 'uid=' . $user );
+#print "<P>Trying ".$UP_options['ldap_basedn'][$i];
         if ($r) {
             $result = @ldap_get_entries( $ds, $r);
 
@@ -25,7 +25,7 @@ function ldap_authenticate( $user, $password ) {
     return NULL;
 }
 
-# Authenticate by looking in UP_config('file_location')
+# Authenticate by looking in UP_options('file_location')
 # Lines in the file have the format:
 # user:Full Name:$salt$passwordhashinsomestandardformat
 #
@@ -33,8 +33,8 @@ function ldap_authenticate( $user, $password ) {
 
 function file_authenticate($user, $password)
 {
-    global $UP_config;
-    $pwdhandle = fopen($UP_config['file_location'], "r");
+    global $UP_options;
+    $pwdhandle = fopen($UP_options['file_location'], "r");
     $pattern = "/^$user:([^:]+):([^:]+)/";
     $found = 0;
 

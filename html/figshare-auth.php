@@ -11,13 +11,13 @@ require '../uportal/uportal-config/uportal-functions2.inc';
 require '../uportal/uportal-config/dspace-functions.inc';
 session_start();
 
-global $UP_config;
+global $UP_options;
  if( array_key_exists( 'uid', $_SESSION ) && isset( $_SESSION['uid'] ) ) {
 	$uid = $_SESSION['uid'];
 	testapiAction( make_figshare_nonce($uid) );
  }
  else {
-    $proto = $UP_config['protocol'];
+    $proto = $UP_options['protocol'];
    $host  = $_SERVER['HTTP_HOST'];
    $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
    header("Location: $proto://$host$uri");
@@ -28,11 +28,11 @@ global $UP_config;
 
   function testapiAction( $nonce )
   {
-    global $UP_config;
+    global $UP_options;
 
 
-	$key = $UP_config['figshare_key'];
-	$secret = $UP_config['figshare_secret'];
+	$key = $UP_options['figshare_key'];
+	$secret = $UP_options['figshare_secret'];
 
     $host = 'http://api.figshare.com/v1/pbl';
 
@@ -58,7 +58,7 @@ global $UP_config;
     {
         if (empty($_GET["oauth_token"]))
         {
-            $proto = $UP_config['protocol'];
+            $proto = $UP_options['protocol'];
             $host  = $_SERVER['HTTP_HOST'];
             $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
             $getAuthTokenParams = array(
@@ -90,7 +90,7 @@ global $UP_config;
 //function set_figshare_key_secret( $nonce, $key, $secret ) {
 
 	set_figshare_key_secret( $nonce, $lalala['oauth_token'], $lalala['oauth_token_secret'] );
-    $proto = $UP_config['protocol'];
+    $proto = $UP_options['protocol'];
     $host  = $_SERVER['HTTP_HOST'];
     $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
     $extra = '?action=profile';

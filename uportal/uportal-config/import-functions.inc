@@ -1,6 +1,6 @@
 <?
 
-require 'configuration2.inc';
+require_once 'configuration.inc';
 require_once 'db-functions.inc';
 
 function get_next_seq_id() {

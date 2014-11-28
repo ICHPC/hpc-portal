@@ -1,11 +1,10 @@
 <?php
 
-require_once 'db-functions.inc';
-require_once 'configuration2.inc';
 require_once 'uportal-functions2.inc';
+require_once 'db-functions.inc';
 
 function figshare_credentials( $user_id ) {
-    global $UP_config;
+    global $UP_options;
 
     #pg_prepare( $dbconn, "mfn2", "SELECT figsharekey, figsharesecret FROM profile WHERE userid = $1" );
     $query = "SELECT figsharekey, figsharesecret FROM profile WHERE user_id = ?";
@@ -14,8 +13,8 @@ function figshare_credentials( $user_id ) {
     $arr = db_query( $query, array($user_id) );
 
     $res = array();
-    $res[ 'consumer_key' ] = $UP_config['figshare_key'];
-    $res[ 'consumer_secret' ] = $UP_config['figshare_secret'];
+    $res[ 'consumer_key' ] = $UP_options['figshare_key'];
+    $res[ 'consumer_secret' ] = $UP_options['figshare_secret'];
     $res[ 'token_key' ] = $arr['figsharekey' ];
     $res[ 'token_secret' ] = $arr['figsharesecret' ];
 
@@ -54,7 +53,7 @@ function figshare_publish( $app_id, $jid, $user_id ) {
     # This is quick and dirty. Always assume job type is 'gaussian'
 
     # 1. Get figshare credentials
-    global $UP_config;
+    global $UP_options;
 
     #pg_prepare( $dbconn, "fpq0", "SELECT figshare_is_published FROM job_list WHERE job_id = $1" );
     #$results = pg_execute( $dbconn, "fpq0", array( $jid ) );
@@ -84,7 +83,7 @@ function figshare_publish( $app_id, $jid, $user_id ) {
 
     #3. run teh publish-figshare script
 
-    $UP_publish              = $UP_config['publish-figshare'];
+    $UP_publish              = $UP_options['publish-figshare'];
 
     $app_user = get_app_user( $app_id );
     $app_host = get_app_host( $app_id );
@@ -103,8 +102,8 @@ function figshare_publish( $app_id, $jid, $user_id ) {
         "$app_path/$UP_publish",
         $staging_dir,
         'gaussian',
-        $UP_config['figshare_key'],
-        $UP_config['figshare_secret'],
+        $UP_options['figshare_key'],
+        $UP_options['figshare_secret'],
         $tokkey,
         $toksecret,
         $project,
@@ -133,7 +132,7 @@ function figshare_publish( $app_id, $jid, $user_id ) {
 }
 
 function figshare_make_public( $user_id, $jid ) {
-    global $UP_config;
+    global $UP_options;
 
     #pg_prepare( $dbconn, "fpq1", "SELECT figsharekey,figsharesecret FROM profile WHERE userid = $1" );
     #$results = pg_execute( $dbconn, "fpq1", array( $user_id) );
@@ -158,8 +157,8 @@ function figshare_make_public( $user_id, $jid ) {
     if( !strstr( $fid, "figshare" ) ) {
         $cmdarray = array(
             '/var/www/uportal/bin/make_public.py',
-            '-k', $UP_config['figshare_key'],
-            '-s', $UP_config['figshare_secret'],
+            '-k', $UP_options['figshare_key'],
+            '-s', $UP_options['figshare_secret'],
             '-K', $tokkey,
             '-S', $toksecret,
             '-a', $fid,
@@ -183,7 +182,7 @@ function figshare_make_public( $user_id, $jid ) {
             }
         }
 #exit;  
-    $proto = $UP_config['protocol'];
+    $proto = $UP_options['protocol'];
     $host  = $_SERVER['HTTP_HOST'];
     $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
     $extra = '?action=joblist';
@@ -201,7 +200,7 @@ function chempound_publish( $app_id, $jid, $user_id ) {
     # update the db
 
 
-    global $UP_config;
+    global $UP_options;
 
     $res=false;
 
@@ -219,7 +218,7 @@ function chempound_publish( $app_id, $jid, $user_id ) {
 
     copy_job_file( $jid, "output-".$index, $tmpfile, $user_id );
 
-    $cmdarray = array( $UP_config['chempound_importer'], $tmpfile );
+    $cmdarray = array( $UP_options['chempound_importer'], $tmpfile );
     $cmd = escapearguments( $cmdarray );
 
     exec( $cmd, $output );
@@ -254,7 +253,7 @@ function dspace_publish(  $app_id, $jid, $user_id ) {
     # update the db
 
 
-    global $UP_config;
+    global $UP_options;
 
     $res=false;
 
@@ -272,7 +271,7 @@ function dspace_publish(  $app_id, $jid, $user_id ) {
 
     copy_job_file( $jid, "output-".$index, $tmpfile, $user_id );
 
-    $cmdarray = array( $UP_config['dspace_importer'], $tmpfile);
+    $cmdarray = array( $UP_options['dspace_importer'], $tmpfile);
     $cmd = escapearguments( $cmdarray );
 
     exec( $cmd, $output );
@@ -311,7 +310,7 @@ function figshare_has_credentials( $uid ) {
 
 function figshare_uploader_upload( $user_id, $projectid ) {
     # 1. Get figshare credentials
-    global $UP_config;
+    global $UP_options;
 
     $query = "SELECT figsharekey,figsharesecret FROM profile WHERE user_id = ?";
     $arr = db_query( $query, array($user_id) );
@@ -334,16 +333,16 @@ print "figshare_uploader_upload: No FIGSHARE credentials [$fskey] [$fssecret]";
     }
 
     $cmdarray = array(  '/var/www/uportal/bin/create.py',
-                        '-k', $UP_config['figshare_key'],
-                        '-s', $UP_config['figshare_secret'],
+                        '-k', $UP_options['figshare_key'],
+                        '-s', $UP_options['figshare_secret'],
                         '-K', $tokkey,
                         '-S', $toksecret,
                         '-t', $_REQUEST['title'],
                         '-d', $_REQUEST['description'],
                     );
 
-    if ( !empty($UP_config['figshare_tags']) ) {
-        foreach (explode( ',', $UP_config['figshare_tags']) as $a) {
+    if ( !empty($UP_options['figshare_tags']) ) {
+        foreach (explode( ',', $UP_options['figshare_tags']) as $a) {
             $cmdarray[] = '-g';
             $cmdarray[] = trim ($a);
         }
@@ -436,7 +435,7 @@ print "figshare_uploader_upload: No FIGSHARE credentials [$fskey] [$fssecret]";
         }
     }
     
-    $proto = $UP_config['protocol'];
+    $proto = $UP_options['protocol'];
     $host  = $_SERVER['HTTP_HOST'];
     $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
     $extra = '/?action=joblist&orderby=0&orderdir=0&byproject='. $projectid;

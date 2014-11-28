@@ -16,8 +16,8 @@ function db_connect($dbuser, $dbpassword, $dbhost, $dbport, $dbname)
     return $db;
 }
 
-global $UP_config;
-$db = db_connect($UP_config['db_user'], $UP_config['db_password'], $UP_config['db_host'], $UP_config['db_port'], $UP_config['db_dbname']);
+global $UP_options;
+$db = db_connect($UP_options['db_user'], $UP_options['db_password'], $UP_options['db_host'], $UP_options['db_port'], $UP_options['db_dbname']);
 
 function db_query($query, array $values)
 {

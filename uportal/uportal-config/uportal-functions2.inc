@@ -1,14 +1,14 @@
 <?
-
-require_once 'configuration2.inc';
+require_once 'configuration.inc';
 require_once 'auth-functions.inc';
 require_once 'db-functions.inc';
 
+
 function authenticate($user, $password)
-# Go through all methods in $UP_config['auth_methods']
+# Go through all methods in $UP_options['auth_methods']
 # attempting to authenticate with each one.
 #
-# If $UP_config['auth_type'] is strict then all methods must succeed,
+# If $UP_options['auth_type'] is strict then all methods must succeed,
 # if it's permissive then any must succeed.
 #
 # The user's fullname is taken from the first successful method.
@@ -18,9 +18,9 @@ function authenticate($user, $password)
 #
 # Returns the fullname if authentication was successful, NULL otherwise.
 {
-    global $UP_config;
-    $methods = array_map('trim',explode(',',$UP_config['auth_methods']));
-    switch (trim($UP_config['auth_type']))
+    global $UP_options;
+    $methods = array_map('trim',explode(',',$UP_options['auth_methods']));
+    switch (trim($UP_options['auth_type']))
     {
         case 'permissive':
             $permissive = true;
@@ -585,20 +585,20 @@ function sanify(  $a ) {
 }
 
 function make_key_name_from_pool( $pool_id ) {
-    global $UP_config;
+    global $UP_options;
 
     $query = "SELECT * from pools WHERE pool_id = ?";
 
     $arr = db_query( $query, array($pool_id) );
 
-    return  ( $UP_config['ssh_keydir']. '/'. $arr['pool_id'].'@'. $arr['remote_user'] . '@' . $arr['remote_host'] . '.id_rsa' );
+    return  ( $UP_options['ssh_keydir']. '/'. $arr['pool_id'].'@'. $arr['remote_user'] . '@' . $arr['remote_host'] . '.id_rsa' );
 
 
 }
 
 
 function make_key_name_from_app( $app_id ) {
-    global $UP_config;
+    global $UP_options;
 
     # SJC make a JOIN ?
     $query   = "SELECT pool_id FROM app_list WHERE app_id = ?";
@@ -609,9 +609,9 @@ function make_key_name_from_app( $app_id ) {
 }
 
 function make_staging_directory( $app_id, $user_id, $job_id  ){
-    global $UP_config;
+    global $UP_options;
 
-    $UP_make_staging_directory = $UP_config['make_staging_directory'];
+    $UP_make_staging_directory = $UP_options['make_staging_directory'];
 
     $app_user = get_app_user( $app_id );
     $app_host = get_app_host( $app_id );
@@ -662,8 +662,8 @@ function get_job_status( $staging_dir, $job_id, $user_id ) {
     }
     else {
         // fetch updated state
-    global $UP_config;
-    $UP_job_status          = $UP_config['job_status'];
+    global $UP_options;
+    $UP_job_status          = $UP_options['job_status'];
 
     $app_user = get_app_user( $app_id );
     $app_host = get_app_host( $app_id );
@@ -718,9 +718,9 @@ function get_job_status( $staging_dir, $job_id, $user_id ) {
 }
 
 function copy_metadata_to_staging_directory( $app_id, $staging_dir, $filename, $contents ) {
-    global $UP_config;
+    global $UP_options;
 
-    $UP_make_staging_directory          = $UP_config['make_staging_directory'];
+    $UP_make_staging_directory          = $UP_options['make_staging_directory'];
 
     $app_user = get_app_user( $app_id );
     $app_host = get_app_host( $app_id );
@@ -747,9 +747,9 @@ function copy_metadata_to_staging_directory( $app_id, $staging_dir, $filename, $
 }
 
 function copy_file_to_staging_directory( $app_id, $staging_dir, $file, $input_index , $user_id ) {
-    global $UP_config;
+    global $UP_options;
 
-    $UP_make_staging_directory          = $UP_config['make_staging_directory'];
+    $UP_make_staging_directory          = $UP_options['make_staging_directory'];
 
     $app_user = get_app_user( $app_id );
     $app_host = get_app_host( $app_id );
@@ -1006,7 +1006,7 @@ function check_job_owner( $uid, $jid ) {
 }
 
 function return_job_output_file( $jid, $idx ) {
-    global $UP_config;
+    global $UP_options;
 
     $query ="SELECT * FROM job_list WHERE job_id = ?";
     $arr = db_query( $query, array($jid) );
@@ -1023,8 +1023,8 @@ function return_job_output_file( $jid, $idx ) {
         die();
     }
 
-    $UP_remote_cat            = $UP_config['remote_cat'];
-    $UP_filetest               = $UP_config['filetest'];
+    $UP_remote_cat            = $UP_options['remote_cat'];
+    $UP_filetest               = $UP_options['filetest'];
 
     $app_user = get_app_user( $app_id );
     $app_host = get_app_host( $app_id );
@@ -1069,7 +1069,7 @@ function return_job_output_file( $jid, $idx ) {
 
 
 function remove_job_file( $jid, $file, $staging_file ) {
-    global $UP_config;
+    global $UP_options;
 
     $query ="SELECT staging_dir, app_id FROM job_list WHERE job_id = ?";
     $arr = db_query( $query, array($jid) );
@@ -1077,7 +1077,7 @@ function remove_job_file( $jid, $file, $staging_file ) {
     $staging_dir = $arr['staging_dir' ];
     $app_id = $arr['app_id'];
 
-    $UP_remote_rm    = $UP_config['remote_rm'];
+    $UP_remote_rm    = $UP_options['remote_rm'];
 
     $app_user = get_app_user( $app_id );
     $app_host = get_app_host( $app_id );
@@ -1104,7 +1104,7 @@ function remove_job_file( $jid, $file, $staging_file ) {
 
 
 function copy_job_file( $jid, $file, $staging_file, $user_id ) {
-    global $UP_config;
+    global $UP_options;
 
     $query ="SELECT staging_dir, app_id FROM job_list WHERE job_id = ?";
     $arr = db_query( $query, array($jid) );
@@ -1112,7 +1112,7 @@ function copy_job_file( $jid, $file, $staging_file, $user_id ) {
     $staging_dir = $arr['staging_dir' ];
     $app_id = $arr['app_id'];
 
-    $UP_remote_cat          = $UP_config['remote_cat'];
+    $UP_remote_cat          = $UP_options['remote_cat'];
 
     $app_user = get_app_user( $app_id );
     $app_host = get_app_host( $app_id );
@@ -1139,7 +1139,7 @@ function copy_job_file( $jid, $file, $staging_file, $user_id ) {
 }
 
 function return_job_input_file(  $jid, $idx ) {
-    global $UP_config;
+    global $UP_options;
 
     $query ="SELECT staging_dir, app_id FROM job_list WHERE job_id = ?";
     $arr = db_query( $query, array($jid) );
@@ -1154,7 +1154,7 @@ function return_job_input_file(  $jid, $idx ) {
         return 0;
     }
 
-    $UP_remote_cat        = $UP_config['remote_cat'];
+    $UP_remote_cat        = $UP_options['remote_cat'];
 
     $app_user = get_app_user( $app_id );
     $app_host = get_app_host( $app_id );
@@ -1179,7 +1179,7 @@ function return_job_input_file(  $jid, $idx ) {
 }
 
 function return_job_tar_file(  $jid , $user_id ) {
-    global $UP_config;
+    global $UP_options;
 
     $query ="SELECT staging_dir, app_id FROM job_list WHERE job_id = ?";
     $arr = db_query( $query, array($jid) );
@@ -1188,7 +1188,7 @@ function return_job_tar_file(  $jid , $user_id ) {
 
     $app_id = $arr['app_id'];
 
-    $UP_make_input_tar        = $UP_config['make_input_tar'];
+    $UP_make_input_tar        = $UP_options['make_input_tar'];
 
     $app_user = get_app_user( $app_id );
     $app_host = get_app_host( $app_id );
@@ -1224,14 +1224,14 @@ function record_input_type( $job_id, $name, $mime_type, $index ) {
 }
 
 function execute_job( $job_id, $app_id, $app, $staging_dir ) {
-    global $UP_config;
+    global $UP_options;
 
 
     $input_file_count=1;
     $output_file_count=4;
     $memory_requirement=1000;
 
-    $UP_run_job    = $UP_config['run_job'];
+    $UP_run_job    = $UP_options['run_job'];
 
     $app_user = get_app_user( $app_id );
     $app_host = get_app_host( $app_id );
@@ -1270,7 +1270,7 @@ print "-->";
 
 
 function delete_job( $job_id ) {
-    global $UP_config;
+    global $UP_options;
 
     #$query = "SELECT count(*) FROM job_list WHERE job_id = ".$job_id ." AND deleted = false";
     $query = "SELECT count(*) FROM job_list WHERE job_id = ? AND deleted = false";
@@ -1301,7 +1301,7 @@ function delete_job( $job_id ) {
 #       die_now();
 #   }
 
-    $UP_delete_job  = $UP_config['delete_job'];
+    $UP_delete_job  = $UP_options['delete_job'];
 
     $app_user = get_app_user( $app_id );
     $app_host = get_app_host( $app_id );
@@ -1363,7 +1363,7 @@ function is_publishable( $appid, $jid ) {
 }
 
 function pool_motd( $pool_id) {
-    global $UP_config;
+    global $UP_options;
 
     $query   = "SELECT * from pools WHERE pool_id = ?";
     $arr = db_query( $query, array($pool_id) );
@@ -1390,7 +1390,7 @@ function pool_motd( $pool_id) {
 
 }
 function pool_status( $pool_id) {
-    global $UP_config;
+    global $UP_options;
 
     $query   = "SELECT * from pools WHERE pool_id = ?";
     $arr = db_query( $query, array($pool_id) );
@@ -1399,7 +1399,7 @@ function pool_status( $pool_id) {
 
     $key = make_key_name_from_pool( $pool_id );
 
-    $UP_pool_status = $UP_config['pool_status'];
+    $UP_pool_status = $UP_options['pool_status'];
 
     $app_user =  $arr['remote_user'];
     $app_host =  $arr['remote_host'];
@@ -1561,7 +1561,7 @@ function get_key( $pool_id ) {
 }
 
 function add_pool( $user, $remote_user, $remote_host, $script_path, $description ) {
-    global $UP_config;
+    global $UP_options;
 
     # first get pool id
     $query = "SELECT nextval('pool_id_seq')";
@@ -1593,9 +1593,9 @@ function add_pool( $user, $remote_user, $remote_host, $script_path, $description
 
     # Generate a new ssh key
 
-#    $sshkeygen = $UP_config['ssh-keygen'];
+#    $sshkeygen = $UP_options['ssh-keygen'];
 #    $cmd = $sshkeygen . " -t rsa -f " . $key;
-    $cmdarray = array(    $UP_config['ssh-keygen'],
+    $cmdarray = array(    $UP_options['ssh-keygen'],
                         '-t', 'rsa',
                         '-f', $key,
                     );
@@ -1656,7 +1656,7 @@ function get_pool_applications( $pool_id ) {
 }
 
 function refresh_pool_applications( $pool_id ) {
-    global $UP_config;
+    global $UP_options;
 
     #$query   = "SELECT * FROM pools WHERE pool_id = " . $pool_id;
     $query   = "SELECT * FROM pools WHERE pool_id = ?";
@@ -1666,7 +1666,7 @@ function refresh_pool_applications( $pool_id ) {
 
     $key = make_key_name_from_pool( $pool_id );
 
-    $UP_app_config = $UP_config['app_config'];
+    $UP_app_config = $UP_options['app_config'];
 
     $app_user =  $arr['remote_user'];
     $app_host =  $arr['remote_host'];
@@ -2057,7 +2057,7 @@ function preview_file( $jid, $idx, $user_id ) {
 }
 
 function return_job_output_file_str( $app_id, $jid, $idx , $user_id ) {
-    global $UP_config;
+    global $UP_options;
 
     $query ="SELECT * FROM job_list WHERE job_id = ?";
     $arr = db_query( $query, array($jid) );
@@ -2065,7 +2065,7 @@ function return_job_output_file_str( $app_id, $jid, $idx , $user_id ) {
 
     $staging_dir = $arr['staging_dir' ];
 
-    $UP_remote_cat            = $UP_config['remote_cat'];
+    $UP_remote_cat            = $UP_options['remote_cat'];
 
     $app_user = get_app_user( $app_id );
     $app_host = get_app_host( $app_id );
@@ -2084,7 +2084,7 @@ function return_job_output_file_str( $app_id, $jid, $idx , $user_id ) {
 }
 
 function embargo( $username ) {
-    global $UP_config;
+    global $UP_options;
     $uid =  get_uid( $username );
 
     echo "<BR> Warning: embargo not fully implemented.";
@@ -2141,9 +2141,9 @@ function get_job_description( $jid ) {
 }
 
 function get_admin_email() {
-    global $UP_config;
+    global $UP_options;
 
-    return (empty($UP_config['admin_email']) ? 'admin' : $UP_config['admin_email']);
+    return (empty($UP_options['admin_email']) ? 'admin' : $UP_options['admin_email']);
 }
 
 function is_project_empty( $project_id ) {
@@ -2154,7 +2154,7 @@ function is_project_empty( $project_id ) {
 }
 
 function tempdir() {
-    $dir = $UP_config['tempdir'] ? $UP_config['tempdir'] : '/tmp/';
+    $dir = $UP_options['tempdir'] ? $UP_options['tempdir'] : '/tmp/';
     if (substr($dir, -1) != '/') $dir .= '/';
 
     $prefix = 'uportal';
@@ -2175,10 +2175,10 @@ function escapearguments( $args ) {
 }
 
 function make_ssh_cmd( $sshkey, $app_user, $app_host, $cmdarray ) {
-    global $UP_config;
-    $UP_ssh     = $UP_config['ssh'];
-    $UP_ssh_flags = $UP_config['ssh_flags'];
-    $UP_ssh_key = $UP_config['ssh_key_flag'];
+    global $UP_options;
+    $UP_ssh     = $UP_options['ssh'];
+    $UP_ssh_flags = $UP_options['ssh_flags'];
+    $UP_ssh_key = $UP_options['ssh_key_flag'];
     $ssharray = array(  $UP_ssh,
                         $UP_ssh_key,
                         $sshkey,
@@ -2195,10 +2195,10 @@ function make_ssh_cmd( $sshkey, $app_user, $app_host, $cmdarray ) {
 }
 
 function make_scp_cmd( $sshkey, $cmdarray ) {
-    global $UP_config;
-    $UP_scp     = $UP_config['scp'];
-    $UP_ssh_flags = $UP_config['ssh_flags'];
-    $UP_ssh_key = $UP_config['ssh_key_flag'];
+    global $UP_options;
+    $UP_scp     = $UP_options['scp'];
+    $UP_ssh_flags = $UP_options['ssh_flags'];
+    $UP_ssh_key = $UP_options['ssh_key_flag'];
     $scparray = array(  $UP_scp,
                         $UP_ssh_key,
                         $sshkey,

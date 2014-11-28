@@ -3,7 +3,7 @@
 <P>Please try again soon!
 
 <?
-require '../uportal/uportal-config/configuration2.inc';
-print "<P>" . $UP_config['admin_name']  . "\n";
+require '../uportal/uportal-config/uportal-functions2.inc';
+print "<P>" . $UP_options['admin_name']  . "\n";
 ?>
 </HTML>
