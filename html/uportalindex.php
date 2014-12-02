@@ -613,14 +613,27 @@ if(1) {
 
         switch( strtolower( sanify( $_REQUEST['subaction'] ) ) ) {
             case 'set':
+            # This also untaints, so $acl_user_ids is only +ve integers
+            $acl_ACLuser_ids = array_filter( array_keys($_REQUEST), "user_id_from_acl" );
+            $acl_user_ids = array_map( "deACL_array", $acl_ACLuser_ids );
+            set_pool_acl( $acl_user_ids, $pool_id, $_SESSION['uid'] );
+            $proto = $UP_options['protocol'];
+            $host  = $_SERVER['HTTP_HOST'];
+            $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
+            $extra = "?action=acl&pool=$pool_id";
+            header("Location: $proto://$host$uri/$extra");
             break;
+
             default:
             $a = get_pool_acl( $pool_id );
+            $b = get_pool( $pool_id );
 
             $smarty->assign( "acl", $a );
             $smarty->assign( "pool", $pool_id );
+            $smarty->assign( "poolname", $b['description'] );
             $smarty->display( "acl.tpl" );
             exit;
+            break;
         }
     break;
 
@@ -913,5 +926,11 @@ function fatal_error( $err ) {
                 $smarty->assign( 'error', $err );
                 $smarty->display('error.tpl');
                 exit;
+}
+function user_id_from_acl( $x ) {
+    return( preg_match( '/^ACL\d+$/', $x ) );
+}
+function deACL_array( $x ) {
+    return substr( $x, 3 );
 }
 ?>

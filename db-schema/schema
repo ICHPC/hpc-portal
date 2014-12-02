@@ -205,6 +205,7 @@ CREATE TABLE pools (
     script_path character varying(1024) DEFAULT '/'::character varying NOT NULL,
     description character varying(100) NOT NULL,
     public boolean DEFAULT false NOT NULL
+    deleted boolean DEFAULT false NOT NULL
 );
 
 

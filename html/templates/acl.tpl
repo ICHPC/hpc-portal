@@ -3,7 +3,7 @@
 		<!-- main Col start-->
 		<div id="hmMain">
 
-			<h1>Pool Access Control List</h1>
+			<h1>Access Control List for Pool {$poolname}</h1>
 
 
 	<form>
@@ -13,14 +13,15 @@
 		<tr>
 		<td>{$acl[sec1].uname}</td>
 		{if $acl[sec1].member=="1"}
-		<td><input type="checkbox" name="{$acl[sec1].uname}" checked="1"></td>
+		<td><input type="checkbox" name="ACL{$acl[sec1].user_id}" checked="1"></td>
 		{else}
-		<td><input type="checkbox" name="{$acl[sec1].uname}"></td>
+		<td><input type="checkbox" name="ACL{$acl[sec1].user_id}"></td>
 		{/if}
 		</tr>
 	{/section}
 	</table>
 	<input type="hidden" name="action" value="acl">
+	<input type="hidden" name="subaction" value="set">
 	<input type="hidden" name="pool"   value="{$pool}">
 	<input type="submit" value="Update">
 	</form>

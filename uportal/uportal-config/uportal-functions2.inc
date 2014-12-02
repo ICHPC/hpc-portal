@@ -1446,7 +1446,7 @@ function app_in_pool( $pool_id, $app_id ) {
 function has_access_to_pool( $pool_id, $user_id ) {
 
     #$query = "SELECT * FROM acl WHERE  user_id = " . $user_id . "AND pool_id = ". $pool_id;
-    $query = "SELECT * FROM acl WHERE  user_id = ? AND pool_id = ?";
+    $query = "SELECT * FROM acl WHERE  user_id = ? AND pool_id = ? AND deleted = false";
     $arr = db_query( $query, array($user_id, $pool_id) );
 
     return ( $arr!=NULL );
@@ -1455,7 +1455,7 @@ function has_access_to_pool( $pool_id, $user_id ) {
 
 function get_available_pools( $user_id ) {
 
-    $query = "SELECT * FROM acl a JOIN pools b ON a.pool_id = b.pool_id WHERE  a.user_id = ?";
+    $query = "SELECT * FROM acl a JOIN pools b ON a.pool_id = b.pool_id WHERE  a.user_id = ? AND deleted = false";
     $allarr = db_query_all( $query, array($user_id) );
 
     $idx  = array();
@@ -1474,8 +1474,7 @@ function get_available_pools( $user_id ) {
 function get_pools( $user ) {
     $user_id = get_uid( $user );
 
-    #$query = "SELECT * FROM pools WHERE pool_id in ( SELECT pool_id from acl WHERE user_id = " . $user_id . ")";
-    $query = "SELECT * FROM pools WHERE pool_id in ( SELECT pool_id from acl WHERE user_id = ? )";
+    $query = "SELECT * FROM pools WHERE ( pool_id in ( SELECT pool_id from acl WHERE user_id = ? ) OR public=true ) AND deleted = false";
     $allarr = db_query_all( $query, array($user_id) );
 
     $plist = array();
@@ -1522,8 +1521,7 @@ function get_pool( $pool_id ) {
 function delete_pool( $user, $pool_id ) {
     $user_id = get_uid( $user );
 
-    #$query = "DELETE FROM pools WHERE pool_id = ". $pool_id ." AND owner = " . $user_id;
-    $query = "DELETE FROM pools WHERE pool_id = ? AND owner = ?";
+    $query = "UPDATE pools SET deleted=true WHERE pool_id = ? AND owner = ?";
     $result = db_query( $query, array($pool_id, $user_id) );
 
 }
@@ -1533,7 +1531,7 @@ function owns_pool( $username, $pool_id ) {
     $user_id = get_uid( $username );
 
     #$query = "SELECT owner FROM pools WHERE pool_id = " . $pool_id . " AND owner = " . $user_id;
-    $query = "SELECT owner FROM pools WHERE pool_id = ? AND owner = ?";
+    $query = "SELECT owner FROM pools WHERE pool_id = ? AND owner = ? AND deleted = false";
 
     $arr = db_query( $query, array($pool_id, $user_id) );
 
@@ -1953,23 +1951,42 @@ function manage_job_invocation( $uid, $app_id, $description, $project_id ) {
 
 function get_pool_acl( $pool_id ) {
 
-    $query = "SELECT a.pool_id, b.username FROM acl a FULL JOIN users b ON a.user_id=b.user_id WHERE" .
-                " a.pool_id = ? or a.pool_id is NULL ORDER BY b.username ASC";
+    $query = "SELECT user_id, username FROM users ORDER BY username ASC";
+    $allarrusers = db_query_all( $query, array() );
 
-    $allarr = db_query_all( $query, array($pool_id) );
+    $query = "SELECT user_id FROM acl WHERE pool_id = ?";
+    $allarracl = db_query_all( $query, array($pool_id) );
+    $acls = array();
+    if (! empty($allarracl)) {
+        foreach ($allarracl as $acl) {
+            $acls[$acl['user_id']] = 1;
+        }
+    }
 
-    $res= array();
-    if (! empty($allarr)) {
-        foreach ($allarr as $arr) {
+    $res = array();
+    if (! empty($allarrusers)) {
+        foreach ($allarrusers as $arr) {
             $is_mem = false;
-            if ( $arr['pool_id'] == $pool_id ) { $is_mem=true; }
-            $res[] = array( 'uname' => $arr['username'] , 'member' => $is_mem );
+            if ( array_key_exists( $arr['user_id'], $acls ) ) { $is_mem=true; }
+            $res[] = array( 'uname' => $arr['username'] , 'user_id' => $arr['user_id'], 'member' => $is_mem );
 
         }
     }
     return $res;
 }
 
+function set_pool_acl( $acl_user_ids, $pool_id, $user_id ) {
+    $query = "DELETE FROM acl WHERE pool_id = ? AND user_id != ?";
+    $arr = db_query( $query, array($pool_id, $user_id) );
+
+    # If this gets slow then make a transaction method
+    $query = "INSERT INTO acl (user_id, pool_id) VALUES (?, ?)";
+    foreach( $acl_user_ids as $id ) {
+        if( user_id_exists($id) && $user_id != $id ) {
+            $arr = db_query( $query, array($id, $pool_id) );
+        }
+    }
+}
 
 function check_figshare( $str ) {
     $matches = null;
@@ -2208,5 +2225,11 @@ function make_scp_cmd( $sshkey, $cmdarray ) {
     }
     $cmd = escapearguments( array_merge($scparray, $cmdarray) );
     return $cmd;
+}
+
+function user_id_exists( $user_id ) {
+    $query = "SELECT count(user_id) FROM users WHERE user_id = ?";
+    $arr = db_query( $query, array($user_id) );
+    return ($arr['count'] == 1);
 }
 ?>
