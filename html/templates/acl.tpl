@@ -20,9 +20,19 @@
 		</tr>
 	{/section}
 	</table>
+    <p>
 	<input type="hidden" name="action" value="acl">
 	<input type="hidden" name="subaction" value="set">
 	<input type="hidden" name="pool"   value="{$pool}">
+    {if $is_admin==1}
+    <h2>Admin option</h2>
+        {if $is_public==1}
+        <p>Make this pool public: <input type="checkbox" name="public" checked="1"></p>
+        {else}
+        <p>Make this pool public: <input type="checkbox" name="public"></p>
+        {/if}
+
+    {/if}
 	<input type="submit" value="Update">
 	</form>
 

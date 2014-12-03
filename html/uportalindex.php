@@ -646,13 +646,22 @@ if(1) {
             fatal_error( "You do not own this pool" );
         }
 
+        $is_admin = is_admin($_SESSION['username']);
 
         switch( strtolower( sanify( $_REQUEST['subaction'] ) ) ) {
             case 'set':
+
+            if( $is_admin ) {
+                set_pool_public( $pool_id, !empty($_REQUEST['public']) );
+            }
+
             # This also untaints, so $acl_user_ids is only +ve integers
             $acl_ACLuser_ids = array_filter( array_keys($_REQUEST), "user_id_from_acl" );
             $acl_user_ids = array_map( "deACL_array", $acl_ACLuser_ids );
+
             set_pool_acl( $acl_user_ids, $pool_id, $_SESSION['uid'] );
+
+
             $proto = $UP_options['protocol'];
             $host  = $_SERVER['HTTP_HOST'];
             $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
@@ -666,6 +675,8 @@ if(1) {
 
             $smarty->assign( "acl", $a );
             $smarty->assign( "pool", $pool_id );
+            $smarty->assign( "is_admin", $is_admin );
+            $smarty->assign( "is_public", $b['public'] );
             $smarty->assign( "poolname", $b['description'] );
             $smarty->display( "acl.tpl" );
             exit;

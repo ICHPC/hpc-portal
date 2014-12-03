@@ -1518,9 +1518,19 @@ function get_pool( $pool_id ) {
             'path' => $arr['script_path'],
             'pool_id' => $arr['pool_id'],
             'mine' => true,
+            'public' => $arr['public'],
         );
     }
     return $foo;
+}
+
+function set_pool_public( $pool_id, $public ) {
+    if( $public ) {
+        $query = "UPDATE pools SET public=true WHERE pool_id = ?";
+    } else {
+        $query = "UPDATE pools SET public=false WHERE pool_id = ?";
+    }
+    $arr = db_query( $query, array($pool_id) );
 }
 
 function delete_pool( $user, $pool_id ) {
