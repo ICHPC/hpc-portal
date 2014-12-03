@@ -41,6 +41,9 @@ switch( $action ) {
     case 'login':
         # username and password passed to authenticate() unsanified
         $password = $_REQUEST['password'];
+        if( is_blocked( $_REQUEST['username'] ) ) {
+            fatal_error( "This account is blocked.  Contact the admin." );
+        }
         $gecos = authenticate( $_REQUEST['username'], $password  );
         # username now sanified
         $username = sanify( $_REQUEST['username'] );
@@ -99,6 +102,10 @@ if( empty( $_SESSION['uid'] ) ) {
     exit;
 }
 
+if( is_blocked( $_SESSION['username'] ) ) {
+    fatal_error( "This account is blocked.  Contact the admin." );
+}
+
 # Set up menus
 
 $menuitems =  array (
@@ -112,10 +119,10 @@ array( "name" => "Publish", "url" => "?action=uploader" ),
 array( "name" => "Help", "url" => "https://wiki.ch.ic.ac.uk/wiki/index.php?title=Mod:HPC" ),
 );
 
-#   if ( is_admin( $_SESSION['username'] ) ) {
-        # Admin functions
-//      $menuitems[] = array( "name" => "Pools", "url" => "?action=pools" ) ;
-#   }
+if ( is_admin( $_SESSION['username'] ) ) {
+# Admin functions
+    $menuitems[] = array( "name" => "Manage users", "url" => "?action=manage" ) ;
+}
 
 $smarty->assign( "menulinks", $menuitems ) ;
 
@@ -137,6 +144,35 @@ if ($processed ) { exit; }
 if (empty( $_REQUEST['subaction'] ) ) { $_REQUEST['subaction']='default'; }
 
 switch( $action ) {
+    case 'manage':
+        if( !is_admin( $_SESSION['username'] ) ) {
+            fatal_error( "You must be an admin to manage users" );
+        }
+
+        switch( strtolower( sanify( $_REQUEST['subaction'] ) ) ) {
+            case 'set':
+            $adm_ADMuser_ids = array_filter( array_keys($_REQUEST), "user_id_from_adm" );
+            $adm_user_ids = array_map( "de3s_array", $adm_ADMuser_ids );
+            $blk_BLKuser_ids = array_filter( array_keys($_REQUEST), "user_id_from_blk" );
+            $blk_user_ids = array_map( "de3s_array", $blk_BLKuser_ids );
+
+            set_admin_blk_users( $adm_user_ids, $blk_user_ids, $_SESSION['uid'] );
+
+            $proto = $UP_options['protocol'];
+            $host  = $_SERVER['HTTP_HOST'];
+            $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
+            $extra = "?action=manage";
+            header("Location: $proto://$host$uri/$extra");
+            break;
+
+            default:
+            $a = get_admin_users();
+            $smarty->assign( "manage", $a );
+            $smarty->display( "manage.tpl" );
+            exit;
+            break;
+        }
+    break;
     case 'publish':
 
         $subaction = strtolower( sanify( $_REQUEST['subaction'] ) );
@@ -930,7 +966,13 @@ function fatal_error( $err ) {
 function user_id_from_acl( $x ) {
     return( preg_match( '/^ACL\d+$/', $x ) );
 }
-function deACL_array( $x ) {
+function user_id_from_adm( $x ) {
+    return( preg_match( '/^ADM\d+$/', $x ) );
+}
+function user_id_from_blk( $x ) {
+    return( preg_match( '/^BLK\d+$/', $x ) );
+}
+function de3s_array( $x ) {
     return substr( $x, 3 );
 }
 ?>

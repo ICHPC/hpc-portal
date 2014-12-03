@@ -366,6 +366,11 @@ function is_admin( $user ) {
 
 }
 
+function is_blocked( $user ) {
+    $query = "SELECT is_blocked FROM users WHERE username = ?";
+    $arr = db_query( $query, array($user) );
+    return ($arr['is_blocked']);
+}
 
 function check_user_registration(  $user ) {
 
@@ -1985,6 +1990,38 @@ function set_pool_acl( $acl_user_ids, $pool_id, $user_id ) {
         if( user_id_exists($id) && $user_id != $id ) {
             $arr = db_query( $query, array($id, $pool_id) );
         }
+    }
+}
+
+function get_admin_users() {
+    $query = "SELECT user_id, username, is_admin, is_blocked FROM users ORDER BY username ASC";
+    $allarrusers = db_query_all( $query, array() );
+
+    $res = array();
+    if (! empty($allarrusers)) {
+        foreach ($allarrusers as $arr) {
+            $res[] = array( 'uname' => $arr['username'] , 'user_id' => $arr['user_id'],
+                'admin' => $arr['is_admin'], 'blocked' => $arr['is_blocked'] );
+
+        }
+    }
+    return $res;
+}
+
+function set_admin_blk_users( $adm_user_ids, $blk_user_ids, $user_id ) {
+    # Can't de-admin yourself
+    $query = "UPDATE users SET is_admin=false,is_blocked=false WHERE user_id != ?";
+    $arr = db_query( $query, array($user_id) );
+
+    # If this gets slow make a transaction
+    $query = "UPDATE users SET is_admin=true WHERE user_id = ?";
+    foreach( $adm_user_ids as $adm ) {
+        $arr = db_query( $query, array($adm) );
+    }
+    # Can't block yourself
+    $query = "UPDATE users SET is_blocked=true WHERE user_id = ? AND user_id != ?";
+    foreach( $blk_user_ids as $blk ) {
+        $arr = db_query( $query, array($blk, $user_id) );
     }
 }
 

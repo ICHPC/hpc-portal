@@ -289,6 +289,7 @@ ALTER TABLE public.user_id_seq_id OWNER TO uportal;
 CREATE TABLE users (
     user_id integer DEFAULT nextval(('user_id_seq_id'::text)::regclass) NOT NULL,
     is_admin boolean DEFAULT false NOT NULL,
+    is_blocked boolean DEFAULT false NOT NULL,
     username character varying(1024),
 );
 
