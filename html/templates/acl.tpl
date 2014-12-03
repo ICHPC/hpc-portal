@@ -8,14 +8,14 @@
 
 	<form>
 	<table class="MYTABLE">
-	<tr><th>User<th><th>Access</th></tr>
+	<tr><th>User</th><th>Access</th></tr>
 	{section name=sec1 loop=$acl}
 		<tr>
 		<td>{$acl[sec1].uname}</td>
 		{if $acl[sec1].member=="1"}
-		<td><input type="checkbox" name="{$acl[sec1].uname}" checked="1"></td>
+		<td align=center><input type="checkbox" name="{$acl[sec1].uname}" checked="1"></td>
 		{else}
-		<td><input type="checkbox" name="{$acl[sec1].uname}"></td>
+		<td align=center><input type="checkbox" name="{$acl[sec1].uname}"></td>
 		{/if}
 		</tr>
 	{/section}
