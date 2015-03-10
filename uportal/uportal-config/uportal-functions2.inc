@@ -2219,6 +2219,7 @@ function is_project_empty( $project_id ) {
 }
 
 function tempdir() {
+    global $UP_options;
     $dir = $UP_options['tempdir'] ? $UP_options['tempdir'] : '/tmp/';
     if (substr($dir, -1) != '/') $dir .= '/';
 
@@ -2226,7 +2227,7 @@ function tempdir() {
     do
     {
       $path = $dir.$prefix.mt_rand(0, 9999999);
-    } while (!mkdir($path, 700));
+    } while (!mkdir($path, 0777));
 
     return $path;
 }
