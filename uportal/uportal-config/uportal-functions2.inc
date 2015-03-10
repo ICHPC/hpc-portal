@@ -1451,7 +1451,8 @@ function app_in_pool( $pool_id, $app_id ) {
 function has_access_to_pool( $pool_id, $user_id ) {
 
     #$query = "SELECT * FROM acl WHERE  user_id = " . $user_id . "AND pool_id = ". $pool_id;
-    $query = "SELECT * FROM acl WHERE  user_id = ? AND pool_id = ? AND deleted = false";
+    #$query = "SELECT * FROM acl WHERE  user_id = ? AND pool_id = ? AND deleted = false";
+    $query = "SELECT * from acl a, pools b WHERE a.user_id = ? AND a.pool_id = ? AND (a.pool_id = b.pool_id) AND b.deleted=false";
     $arr = db_query( $query, array($user_id, $pool_id) );
 
     return ( $arr!=NULL );
