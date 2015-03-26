@@ -20,3 +20,6 @@ ALTER TABLE users DROP COLUMN orcid;
 ALTER TABLE users DROP COLUMN figsharekey;
 ALTER TABLE users DROP COLUMN figsharesecret;
 
+-- 6. Allow pools to be deleted.
+ALTER TABLE pools ADD COLUMN deleted BOOLEAN DEFAULT FALSE NOT NULL;
+
