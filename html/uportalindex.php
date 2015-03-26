@@ -109,7 +109,7 @@ if( is_blocked( $_SESSION['username'] ) ) {
 # Set up menus
 
 $menuitems =  array (
-array( "name" => "Index", "url" => "?action=index" ) ,
+array( "name" => "Home", "url" => "?action=index" ) ,
 array( "name" => "Projects", "url" => "?action=projects"),
 array( "name" => "Job list", "url" => "?action=joblist"),
 array( "name" => "New job", "url" => "?action=newjob" ),

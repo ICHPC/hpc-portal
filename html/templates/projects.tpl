@@ -4,6 +4,8 @@
 		<div id="hmMain">
 
 			<h1>Projects</h1>
+            <p>You may define projects to organise your jobs. A job is assigned
+            a project when it is run; you may reassign it later.</p>
 
 	<h2>Current Projects</h2>
 
@@ -28,12 +30,17 @@
 
 <h2>Add Project</h2>
 <form>
-	<Input name ="name" type="textfield"></input>
+<table class="MYTABLE">
+    <tr>
+    <td>Project name</td>
+    <td><Input name ="name" type="textfield"></input></td>
+    </tr>
 	<input type = "hidden" name ="action" value="projects" >
 	<input type = "hidden" name ="subaction" value="add" >
+</table>
+    <p></p>
 	<input type="submit" value="Add">
 </form>
-</table>
 
 
 

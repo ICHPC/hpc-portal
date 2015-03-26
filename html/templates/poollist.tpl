@@ -11,9 +11,9 @@
 <table class="MYTABLE">
 		<tr>	
 			<th>Pool Name</th>
-			<th>User</th>
 			<th>Host</th>
-			<th>Path</th>
+			<th>User</th>
+			<th>Script Path</th>
 			<th>Public Key</th>
 			<th>Applications</th>
 			<th>Status</th>
@@ -25,8 +25,8 @@
 	{if $pools[sec1].mine}
 	<tr>
 		<td>{$pools[sec1].description}</td>
-		<td>{$pools[sec1].user}</td>
 		<td>{$pools[sec1].host}</td>
+		<td>{$pools[sec1].user}</td>
 		<td>{$pools[sec1].path}</td>
 		<td><a href="?action=pools&subaction=key&pool={$pools[sec1].pool_id}">Download</a></td>
 		<td><a href="?action=pools&subaction=list&pool={$pools[sec1].pool_id}">View</a></td>
@@ -69,23 +69,29 @@
 
 
 <h2>Add Pool</h2>
+<p>To add a new pool, fill in the form and click the &quot;Add&quot; button.</p>
 <form method="post">
 	<table class="MYTABLE">
-	<tr><td>Description</td>
+	<tr><td>Pool Name</td>
 	<td><Input name ="description" type="textfield"></input></td>
+    <td>The name of the new pool</td>
 	</tr>
 	<tr><td>Host</td>
 	<td><Input name ="host" type="textfield"></input></td>
+    <td>The host machine portal will run the jobs on.</td>
 	</tr>
 	<tr><td>User</td>
 	<td><Input name ="user" type="textfield"></input></td>
+    <td>The username the portal will use to connect to the host.</td>
 	</tr>
 	<tr><td>Script Path</td>
 	<td><Input name ="path" type="textfield"></input></td>
+    <td>The path to the scripts the portal will use to run the jobs.</td>
 	</tr>
 	<input type = "hidden" name ="action" value="pools" >
 	<input type = "hidden" name ="subaction" value="add" >
 	</table>
+    <p></p>
 	<input type="submit" value="Add">
 </form>
 </table>
