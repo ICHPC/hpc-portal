@@ -15,6 +15,18 @@
 {/if}
 
 
+<h2>Change Description</h2>
+
+Edit description here
+<form>
+<input name=description type="textfield" value={$description}>
+<input type="hidden" name="action" value="editjobdesc">
+<input type="hidden" name="jid"    value="{$jid}">
+
+<p>
+<input type="Submit" value="Update" >
+</form>
+
 
 <h2>Change Project</h2>
 

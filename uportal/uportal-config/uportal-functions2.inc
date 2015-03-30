@@ -2185,6 +2185,11 @@ function get_job_description( $jid ) {
     return $arr['description'];
 }
 
+function set_job_description( $jid, $desc ) {
+    $query="UPDATE job_list SET description = ? WHERE job_id = ?";
+    $arr= db_query($query, array($desc, $jid));
+}
+
 function get_admin_email() {
     global $UP_options;
 

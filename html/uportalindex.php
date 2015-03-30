@@ -972,6 +972,30 @@ if(1) {
         
     break;
 
+    case 'editjobdesc':
+        $jid = !isset($_REQUEST['jid' ]) ? '' : (int) $_REQUEST['jid' ];
+        if ( ! $jid || !is_int( $jid ) ) {
+            fatal_error( "Invalid job specified" );
+        }
+
+        $uid = $_SESSION['uid'];
+        if ( !check_job_owner( $uid, $jid ) ) {
+            fatal_error( "You do not own this job" );
+        }
+
+        $description = sanify ( $_REQUEST['description'] );
+
+        set_job_description( $jid, $description );
+
+        $proto = $UP_options['protocol'];
+        $host  = $_SERVER['HTTP_HOST'];
+        $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
+        $extra = '?action=joblist';
+        header("Location: $proto://$host$uri/$extra");
+        exit;
+        
+    break;
+
     default:
         if( !isset( $_SESSION['uid'] ) ) {
             $smarty->display('login.tpl');
