@@ -5,6 +5,7 @@ require_once 'dspace-functions.inc';
 
 if( version_compare( PHP_VERSION, '5.0.0', '<' ) ) { fatal_error( "Requires PHP 5" ); }
 
+global $smarty;
 $smarty = new Smarty;
 $smarty->caching = false;
 $smarty->cache_lifetime = 0;
@@ -128,12 +129,7 @@ $smarty->assign( "menulinks", $menuitems ) ;
 
 
 if( $display_index ) {
-    $smarty->assign("motd", get_motd( $_SESSION['username'] ) );
-
-    $smarty->assign( "admin_email", get_admin_email() );
-    $smarty->assign( "admin_email_subject", empty($UP_options['admin_email_subject']) ? 'portal email' : $UP_options['admin_email_subject'] );
-    $smarty->assign( "admin_name", empty($UP_options['admin_name']) ? 'the admin' : $UP_options['admin_name'] );
-    $smarty->display( 'index.tpl' );
+    display_index();
 }
 
 if ($processed ) { exit; }
@@ -221,6 +217,7 @@ if(1) {
                     fatal_error( "Unable to publish. Please send the job ID to " . get_admin_email() );
                 }
                 else {
+                    cancel_embargo( $jid );
                     $proto = $UP_options['protocol'];
                     $host  = $_SERVER['HTTP_HOST'];
                     $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
@@ -292,6 +289,7 @@ if(1) {
         if( isset($_REQUEST['status']) )  { $status   = $_SESSION['status']    = (int) $_REQUEST['status']; }
         if( isset($_REQUEST['published']) )  { $published   = $_SESSION['published']    = (int) $_REQUEST['published']; }
         if( isset($_REQUEST['submittime']) )  { $submittime   = $_SESSION['submittime']    = (int) $_REQUEST['submittime']; }
+        if( isset($_REQUEST['embargoed']) )  { $embargoed   = $_SESSION['embargoed']    = (int) $_REQUEST['embargoed']; }
 
         $orderdir = ( isset($_SESSION['orderdir']) ? $_SESSION['orderdir'] : '' );
         $orderby  = ( isset($_SESSION['orderby']) ? $_SESSION['orderby'] : '' );
@@ -300,6 +298,7 @@ if(1) {
         $status  = ( isset($_SESSION['status']) ? $_SESSION['status'] : 0 );
         $published  = ( isset($_SESSION['published']) ? $_SESSION['published'] : 0 );
         $submittime  = ( isset($_SESSION['submittime']) ? $_SESSION['submittime'] : 0 );
+        $embargoed  = ( isset($_SESSION['embargoed']) ? $_SESSION['embargoed'] : 0 );
 
         if ( !isset($projectid) || !is_int(  $projectid )  ) { $projectid = $_SESSION['orderby_project_id'] = -1; }
         # untaint
@@ -312,7 +311,7 @@ if(1) {
         if ( $orderdir==0 ) { $orderdir=1;}
         else {$orderdir=0;}
 
-        $num_users_jobs = new_get_job_list( $_SESSION['username'] , $orderby, 0, $orderdir, $projectid, 0, $filter, $status, $published, $submittime, 1 );
+        $num_users_jobs = new_get_job_list( $_SESSION['username'] , $orderby, 0, $orderdir, $projectid, 0, $filter, $status, $published, $submittime, $embargoed, 1 );
 
         if( isset($_REQUEST['page']) ) {
             $r_page = sanify( $_REQUEST['page'] );
@@ -342,7 +341,7 @@ if(1) {
         while( sizeof($job_list) == 0 && $page>0 ) {
             $page--;
             $_SESSION['page']=$page;
-            $job_list = new_get_job_list( $_SESSION['username'] , $orderby, $items_per_page, $orderdir, $projectid, $page * $items_per_page, $filter, $status, $published, $submittime );
+            $job_list = new_get_job_list( $_SESSION['username'] , $orderby, $items_per_page, $orderdir, $projectid, $page * $items_per_page, $filter, $status, $published, $submittime, $embargoed );
         }
 
         $avail_pages = array();
@@ -361,6 +360,8 @@ if(1) {
 
         $numperpages = array( 10, 25, 50, 100 );
 
+        $embargoeds = array( "any", "no", "yes", "yes, overdue" );
+
         $smarty->assign( "numperpages", $numperpages );
         $smarty->assign( "defnumperpage", $items_per_page );
         $smarty->assign( "submittime", $submittime );
@@ -377,6 +378,8 @@ if(1) {
         $smarty->assign( "byproject", $projectid );
         $smarty->assign( "defaultfilter", $filter );
         $smarty->assign( "defaultprojectidx" , $projectid );
+        $smarty->assign( "embargoeds", $embargoeds );
+        $smarty->assign( "embargoed", $embargoed );
 
         if( $page==0 ) { $smarty->assign( "suppress_prev", 1 ); };
         if( sizeof($job_list) < $items_per_page ) { $smarty->assign( "suppress_next", 1 ); }
@@ -866,7 +869,8 @@ if(1) {
             fatal_error( "Invalid job specified" );
         }
 
-        if ( !check_job_owner( $_SESSION['uid'], $jid ) ) {
+        $uid = $_SESSION['uid'];
+        if ( !check_job_owner( $uid, $jid ) ) {
             fatal_error( "You do not own this job" );
         }
 
@@ -875,7 +879,7 @@ if(1) {
             if (!is_int( $project ) ) {
                 fatal_error( "Invalid project specified" );
             }
-            if( !check_project_owner( $_SESSION['uid'], $project ) ) {
+            if( !check_project_owner( $uid, $project ) ) {
                 fatal_error( "You do not own this project" );
             }
             set_job_project( $jid, $project );
@@ -892,7 +896,7 @@ if(1) {
         # SJC description
 		$smarty->assign( "description", get_job_description( $jid ) );
 
-        $b=get_projects( $_SESSION['uid'] );
+        $b=get_projects( $uid );
 
 
         $projectid   = get_project_by_jid( $jid );
@@ -908,9 +912,64 @@ if(1) {
         $smarty->assign( "projects", $c['description'] );
         $smarty->assign( "project_idx", $c['project_id'] );
         $smarty->assign( "default_project_idx", $projectid );
+        $smarty->assign( "default_embargo_days", get_default_embargo( $uid ) );
+        $smarty->assign( "embargo_days", get_embargo_days( $jid ) );
 
         $smarty->display('editjob.tpl');
 
+    break;
+
+    case 'embargojob':
+        $jid = !isset($_REQUEST['jid' ]) ? '' : (int) $_REQUEST['jid' ];
+        if ( ! $jid || !is_int( $jid ) ) {
+            fatal_error( "Invalid job specified" );
+        }
+
+        $uid = $_SESSION['uid'];
+        if ( !check_job_owner( $uid, $jid ) ) {
+            fatal_error( "You do not own this job" );
+        }
+
+        $embargo_days = !isset($_REQUEST['embargo_days' ]) ? '' : (int) $_REQUEST['embargo_days' ];
+
+        if( !$embargo_days ) {
+            $embargo_days = get_default_embargo( $uid );
+        }
+
+        if( $embargo_days <= 0 ) {
+            fatal_error( "Can only embargo for the future" );
+        }
+
+        embargo_job( $jid, $embargo_days );
+
+        $proto = $UP_options['protocol'];
+        $host  = $_SERVER['HTTP_HOST'];
+        $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
+        $extra = '?action=joblist';
+        header("Location: $proto://$host$uri/$extra");
+        exit;
+    break;
+
+    case 'cancelembargojob':
+        $jid = !isset($_REQUEST['jid' ]) ? '' : (int) $_REQUEST['jid' ];
+        if ( ! $jid || !is_int( $jid ) ) {
+            fatal_error( "Invalid job specified" );
+        }
+
+        $uid = $_SESSION['uid'];
+        if ( !check_job_owner( $uid, $jid ) ) {
+            fatal_error( "You do not own this job" );
+        }
+
+        cancel_embargo( $jid );
+
+        $proto = $UP_options['protocol'];
+        $host  = $_SERVER['HTTP_HOST'];
+        $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
+        $extra = '?action=joblist';
+        header("Location: $proto://$host$uri/$extra");
+        exit;
+        
     break;
 
     default:
@@ -918,14 +977,25 @@ if(1) {
             $smarty->display('login.tpl');
         }
         else {
-            $smarty->assign("motd", get_motd( $_SESSION['username'] ) );
-            $smarty->assign( "admin_email", get_admin_email() );
-            $smarty->assign( "admin_email_subject", empty($UP_options['admin_email_subject']) ? 'portal email' : $UP_options['admin_email_subject'] );
-            $smarty->assign( "admin_name", empty($UP_options['admin_name']) ? 'the admin' : $UP_options['admin_name'] );
-            $smarty->display('index.tpl');
+            display_index();
         }
 }
 
+function display_index() {
+    global $smarty;
+    $smarty->assign("motd", get_motd( $_SESSION['username'] ) );
+    $smarty->assign( "admin_email", get_admin_email() );
+    $smarty->assign( "admin_email_subject", empty($UP_options['admin_email_subject']) ? 'portal email' : $UP_options['admin_email_subject'] );
+    $smarty->assign( "admin_name", empty($UP_options['admin_name']) ? 'the admin' : $UP_options['admin_name'] );
+
+    $uid = $_SESSION['uid'];
+    if( $job_list = new_get_job_list( $_SESSION['username'], 6, 5, 1, -1, 0, "",
+                                    3, 0, 0, 3, 0 ) ) {
+        $smarty->assign( "job_list", $job_list );
+    }
+
+    $smarty->display('index.tpl');
+}
 function display_profile() {
     global $smarty;
     $b = get_profile( $_SESSION['uid'] );

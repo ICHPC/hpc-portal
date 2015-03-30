@@ -99,17 +99,17 @@ function get_next_job_id() {
 }
 
 function new_get_job_list( $user, $order, $limit, $orderdir=0, $project_id=-1, $offset=0, $filter="",
-                            $status=0, $published=0, $submittime=0, $countonly=0 ) {
+                            $status=0, $published=0, $submittime=0, $embargoed=0, $countonly=0 ) {
     $uid = get_uid( $user );
     $values = array($uid);
 
     $statidx = array ('I' => 'Pending', 'R' => 'Running', 'C' => 'Finished', 'X' => 'Deleted', 'U'=>'Pending', 'H' => 'Paused', '?' => 'Not Queued', '!' => 'Failed' );
     $statq = array( 'I', 'R', 'C', 'O' );
 
-    $orderby = array ( 'job_id' , 'a.app_id' , 'submit_time', 'wall_time',  'status', 'is_published' );
+    $orderby = array ( 'job_id' , 'a.app_id' , 'submit_time', 'wall_time',  'status', 'is_published', 'embargo' );
 
     if ( $countonly == 0 ) {
-        $query = "SELECT a.*, b.app_id, b.app_name FROM job_list a, app_list b WHERE user_id = ? AND deleted=false AND a.app_id = b.app_id";
+        $query = "SELECT a.*, b.app_id, b.app_name, a.embargo_date-current_date AS embargo FROM job_list a, app_list b WHERE user_id = ? AND deleted=false AND a.app_id = b.app_id";
     } else {
         $query = "SELECT COUNT(*) FROM job_list a, app_list b WHERE user_id = ? AND deleted=false AND a.app_id = b.app_id";
     }
@@ -160,12 +160,23 @@ function new_get_job_list( $user, $order, $limit, $orderdir=0, $project_id=-1, $
         $values[] = "%$filter%";
     }
 
+    if( $embargoed > 1 ) {
+        $query .= " AND embargo_status != 0";
+    } else if( $embargoed == 1 ) {
+        $query .= " AND embargo_status = 0";
+    }
+    if( $embargoed == 3 ) {
+        $query .= " AND  a.embargo_date-current_date <= 0";
+    }
+
     if ( $countonly == 0 ) {
         $query .= " ORDER BY "; # can't use prepared statements here
-        if( isset($order) && $order >=0 && $order < count($orderby) )
+        if( isset($order) && $order >=0 && $order < count($orderby) && $order != 6 )
         {
             #$orderbystr = $orderby[$order];
             $query .= $orderby[$order];
+        } else if( $order == 6 ) {
+            $query .= " embargo_status DESC, " . $orderby[$order];
         } else {
             $query .= $orderby[0];
         }
@@ -190,7 +201,7 @@ function new_get_job_list( $user, $order, $limit, $orderdir=0, $project_id=-1, $
 #echo "<!-- $query -->";
 #echo $query;
 #print_r($values);
-#print_r($allarr);
+#print_r($_SESSION);
 
     $list = array();
     if ( $countonly == 0 ) {
@@ -200,9 +211,11 @@ function new_get_job_list( $user, $order, $limit, $orderdir=0, $project_id=-1, $
         return $arr['count'];
     }
 
+#echo "";
+#print_r($allarr);
+
     if( !empty($allarr) ) {
 
-        #while( $arr != NULL ) {
         foreach ($allarr as $arr) {
 
             $job_array=array();
@@ -331,6 +344,10 @@ function new_get_job_list( $user, $order, $limit, $orderdir=0, $project_id=-1, $
     #           echo "</TD>";
 
     #       echo "</TR>\n";
+
+            $job_array['embargo'] = $arr['embargo'];
+            $job_array['embargo_status'] = $arr['embargo_status'];
+            $job_array['embargo_date'] = $arr['embargo_date'];
 
             $list[] = $job_array;
 
@@ -2148,43 +2165,6 @@ function return_job_output_file_str( $app_id, $jid, $idx , $user_id ) {
     return $foo;
 }
 
-function embargo( $username ) {
-    global $UP_options;
-    $uid =  get_uid( $username );
-
-    echo "<BR> Warning: embargo not fully implemented.";
-
-    #$query= "SELECT * FROM profile WHERE userid = ".$uid;
-    $query= "SELECT * FROM profile WHERE user_id = ?";
-
-    $arr = db_query( $query, array($uid) );
-
-    $period = $arr[ 'embargo' ];
-    if( $period <= 0 ) {
-        echo "NO EMBARGO PERIOD SET";
-        return;
-    }
-
-    #$query = "select app_id, job_id from job_list where  userid=".$uid." and is_published=false and deleted=false and  tried_to_publish=false and submit_time < (CURRENT_TIMESTAMP- interval '".$period." days')";
-    $query = "SELECT app_id, job_id FROM job_list WHERE  user_id = ?" .
-            " AND is_published=false AND deleted=false AND" .
-            " tried_to_publish=false AND submit_time <" .
-            " (current_timestamp - INTERVAL ? DAYS)";
-    echo "<BR>".$query;
-
-    $allarr = db_query_all( $query, array($uid, $period) );
-echo "<BR> ".$arr;
-
-    if (! empty($allarr)) {
-        foreach ($allarr as $arr) {
-            echo "<BR>Would publish app id ".$arr['app_id'] . " ". $arr['job_id']. " " . $uid."\n";
-            publish( $arr['app_id'], $arr['job_id'], $uid );
-        }
-    }
-
-    return;
-}
-
 function get_motd( $user ) {
 #   print_r( get_pools( $user ));
     $motd="";
@@ -2281,4 +2261,32 @@ function user_id_exists( $user_id ) {
     $arr = db_query( $query, array($user_id) );
     return ($arr['count'] == 1);
 }
+
+function get_default_embargo( $user_id ) {
+    $query = "SELECT embargo FROM profile WHERE user_id = ?";
+    $arr = db_query( $query, array($user_id) );
+    return $arr['embargo'];
+}
+
+function embargo_job( $jid, $embargo_days ) {
+    $query = "UPDATE job_list SET embargo_date = current_date + CAST( ? AS INTEGER), embargo_status = 1 WHERE job_id = ?";
+    $arr = db_query( $query, array($embargo_days, $jid) );
+}
+
+function cancel_embargo( $jid ) {
+    $query = "UPDATE job_list SET embargo_date = '0000-01-01', embargo_status = 0 WHERE job_id = ?";
+    $arr = db_query( $query, array($jid) );
+}
+
+function get_embargo_days( $jid ) {
+    $query = 'SELECT embargo_date-current_date AS embargo, embargo_status FROM job_list WHERE deleted=false AND job_id = ?';
+    $arr = db_query( $query, array($jid) );
+    if( $arr['embargo_status'] == 0 ) {
+        return NULL;
+    } else {
+        return $arr['embargo'];
+    }
+}
+
+
 ?>

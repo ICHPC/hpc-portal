@@ -19,7 +19,41 @@
 
 <p>{$motd}
 
+{if $job_list}
+<p>The following jobs have passed their embargoes and need
+<a href="?action=joblist&embargoed=3&orderby=6&orderdir=0&status=3">
+attention</a>.</p>
+<table class="MYTABLE">
+<thead>
+<tr>	
+    <th> Job ID</th>
+    <th> Application</th>
+    <th> Description</th>
+    <th> Submission Time</th>
+    <th> Delete</th>
+    <th> Repository</th>
+    <th> Cancel Embargo</th>
+    <th> Embargo Date</th>
+</tr>
+</thead>
 
-		</div>
+{section name=sec1 loop=$job_list}
+    <tr>
+        <td>{$job_list[sec1].jid}</td>
+        <td>{$job_list[sec1].app_name}</td>
+        <td>{$job_list[sec1].description}</td>
+        <td>{$job_list[sec1].submit_time}</td>
+        <td><a href="?action=delete&jid={$job_list[sec1].jid}">Delete</a></td>
+
+        {include file="publish_inc.tpl"}
+        <td><a href="?action=cancelembargojob&jid={$job_list[sec1].jid}">
+            Cancel</a></td>
+        <td>{$job_list[sec1].embargo_date}</td>
+    </tr>
+{/section}
+</table>
+{/if}
+
+</div>
 
 {include file="footer.tpl"}

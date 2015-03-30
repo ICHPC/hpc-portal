@@ -136,7 +136,9 @@ CREATE TABLE job_list (
     chempound_url character varying(256),
     chempound_is_published boolean DEFAULT false,
     figshare_is_published boolean DEFAULT false,
-    figshare_handle character varying(80)
+    figshare_handle character varying(80),
+    embargo_date date DEFAULT '0001-01-01 BC'::date NOT NULL,
+    embargo_status integer DEFAULT 0 NOT NULL
 );
 
 
@@ -231,7 +233,7 @@ ALTER TABLE public.preview_templates OWNER TO uportal;
 CREATE TABLE profile (
     user_id integer NOT NULL,
     foafurl character varying(1024),
-    embargo integer DEFAULT 0,
+    embargo integer DEFAULT 90,
     figsharesecret character varying(80),
     figsharekey character varying(80),
     pub_figshare boolean DEFAULT false,
