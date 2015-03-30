@@ -39,7 +39,7 @@ attention</a>.</p>
 
 {section name=sec1 loop=$job_list}
     <tr>
-        <td>{$job_list[sec1].jid}</td>
+        <td><a href="?action=editjob&jid={$job_list[sec1].jid}">{$job_list[sec1].jid}</a></td>
         <td>{$job_list[sec1].app_name}</td>
         <td>{$job_list[sec1].description}</td>
         <td>{$job_list[sec1].submit_time}</td>

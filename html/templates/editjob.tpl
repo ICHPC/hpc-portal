@@ -5,12 +5,14 @@
 
 			<h1>Edit Job {$jid}</h1>
 
-<!-- Some info about job here, possibly same as in joblist -->
-<p> Job is lovely
-{if !is_null($embargo_days)} and
-    {if $embargo_days > 0} is embargoed for {$embargo_days} more days
-    {else} has passed its embargo and is awaiting action{/if}
-{/if}.
+{if !is_null($embargo_days)}
+    <p> Job is under embargo  
+    {if $embargo_days > 0} for {$embargo_days} more days.
+    {else} and has passed its embargo and is awaiting
+    <a href="?action=joblist&embargoed=3&orderby=6&orderdir=0&status=3">
+        attention.</a>
+    {/if}
+{/if}
 
 
 
