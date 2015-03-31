@@ -49,6 +49,7 @@ Embargoed:
 <input type="hidden" name="action" value="joblist">
 <input type="hidden" name="subaction" value="appinput">
 <input type="Submit" value="Filter" >
+<button type=button onclick="window.location.href='{$clearurl}'">Reset Filter</button>
 </form>
 
 	<table width="100%">

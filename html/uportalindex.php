@@ -362,6 +362,13 @@ if(1) {
 
         $embargoeds = array( "any", "no", "yes", "yes, overdue" );
 
+        # The url to clear the filter
+        $proto = $UP_options['protocol'];
+        $host  = $_SERVER['HTTP_HOST'];
+        $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
+        $extra = "?action=joblist&?byproject=-1&filter=&published=0&status=0&submittime=0&embargoed=0";
+        $clearurl = "$proto://$host$uri/$extra";
+
         $smarty->assign( "numperpages", $numperpages );
         $smarty->assign( "defnumperpage", $items_per_page );
         $smarty->assign( "submittime", $submittime );
@@ -380,6 +387,7 @@ if(1) {
         $smarty->assign( "defaultprojectidx" , $projectid );
         $smarty->assign( "embargoeds", $embargoeds );
         $smarty->assign( "embargoed", $embargoed );
+        $smarty->assign( "clearurl", $clearurl );
 
         if( $page==0 ) { $smarty->assign( "suppress_prev", 1 ); };
         if( sizeof($job_list) < $items_per_page ) { $smarty->assign( "suppress_next", 1 ); }
