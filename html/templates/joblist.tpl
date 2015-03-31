@@ -52,6 +52,13 @@ Embargoed:
 <button type=button onclick="window.location.href='{$clearurl}'">Reset Filter</button>
 </form>
 
+{if $job_list}
+    <p>Click on a job's number to edit some of its details. Click on Publish
+    to publish to the sources selected in your
+    <a href="?action=profile">Profile</a>.
+    Click on Embargo to embargo the job for the default number of days
+    (also in your profile).
+
 	<table width="100%">
 	<tr>
     <td align="left">
@@ -80,7 +87,6 @@ Embargoed:
 
 
 	
-	{if $job_list}
 		<table class="MYTABLE">
 		<thead>
 		<tr>	
@@ -163,22 +169,33 @@ Embargoed:
 
 	<table width="100%">
 	<tr>
-	<td align="left">
+    <td align="left">
+		<a href="?action=joblist&page=1">First</a>
 		{if $suppress_prev != "1" }
 		<a href="?action=joblist&page=prev">Previous</a>
 		{/if}
 	</td>
+    <td align="center">
+        {section loop=$avail_pages name=pag}
+        {if $page == $avail_pages[pag]}
+            {$avail_pages[pag]}
+        {else}
+            <a href="?action=joblist&page={$avail_pages[pag]}">{$avail_pages[pag]}</a>
+        {/if}
+        {/section}
+    </td>
 	<td align="right">
 		{if $suppress_next != "1" }
 		<a href="?action=joblist&page=next">Next</a>
 		{/if}
-	</td>
+		<a href="?action=joblist&page=last">Last</a>
+    </td>
 	</tr>
 	</table>
 
-	{else}
-		<p>No jobs</p>
-	{/if}
+{else}
+    <p>No jobs</p>
+{/if}
 
 
 
