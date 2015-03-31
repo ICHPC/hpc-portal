@@ -155,7 +155,9 @@ Embargoed:
     <!-- Embargo -->
     {if $job_list[sec1].embargo_status != 0}
 		<td class="MYTABLE">{$job_list[sec1].embargo}
-        day{if abs($job_list[sec1].embargo) != 1}s{/if}</td>
+        day{if abs($job_list[sec1].embargo) != 1}s{/if}
+        <a href="?action=cancelembargojob&jid={$job_list[sec1].jid}">
+        (cancel)</a></td>
     {else}
         <td class="MYTABLE">
             <a href="?action=embargojob&jid={$job_list[sec1].jid}">Embargo</a>
