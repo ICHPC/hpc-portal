@@ -269,6 +269,7 @@ if(1) {
 
     break;
     case 'joblist':
+        $uid = $_SESSION['uid'];
         if( !isset( $_SESSION['page'] )) { $_SESSION['page']=0; }
 
         if( !isset( $_SESSION['items_per_page'] )) { $_SESSION['items_per_page']=10; }
@@ -305,13 +306,13 @@ if(1) {
         if( !isset( $orderby ) ||  !is_int( $orderby  ) ) { $orderby = $_SESSION['orderby']  = 0; }
         if( !isset($orderdir)  ||  !is_int( $orderdir ) ) { $orderdir= $_SESSION['orderdir'] = 0; }
 
-        $projectname = get_project_name( $_SESSION['uid'], $projectid );
+        $projectname = get_project_name( $uid, $projectid );
         $smarty->assign( "projectname", $projectname );
 
         if ( $orderdir==0 ) { $orderdir=1;}
         else {$orderdir=0;}
 
-        $num_users_jobs = new_get_job_list( $_SESSION['username'] , $orderby, 0, $orderdir, $projectid, 0, $filter, $status, $published, $submittime, $embargoed, 1 );
+        $num_users_jobs = new_get_job_list( $uid, $orderby, 0, $orderdir, $projectid, 0, $filter, $status, $published, $submittime, $embargoed, 1 );
 
         if( isset($_REQUEST['page']) ) {
             $r_page = sanify( $_REQUEST['page'] );
@@ -341,7 +342,7 @@ if(1) {
         while( sizeof($job_list) == 0 && $page>0 ) {
             $page--;
             $_SESSION['page']=$page;
-            $job_list = new_get_job_list( $_SESSION['username'] , $orderby, $items_per_page, $orderdir, $projectid, $page * $items_per_page, $filter, $status, $published, $submittime, $embargoed );
+            $job_list = new_get_job_list( $uid, $orderby, $items_per_page, $orderdir, $projectid, $page * $items_per_page, $filter, $status, $published, $submittime, $embargoed );
         }
 
         $avail_pages = array();
@@ -392,7 +393,7 @@ if(1) {
         if( $page==0 ) { $smarty->assign( "suppress_prev", 1 ); };
         if( sizeof($job_list) < $items_per_page ) { $smarty->assign( "suppress_next", 1 ); }
 
-        $b=get_projects( $_SESSION['uid'] );
+        $b=get_projects( $uid );
         $b['description'][] = "-- All --" ;
         $b['project_id'][] = -1 ;
         if ( !empty ( $b ) ) {
