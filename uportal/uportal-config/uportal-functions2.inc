@@ -98,9 +98,8 @@ function get_next_job_id() {
 
 }
 
-function new_get_job_list( $user, $order, $limit, $orderdir=0, $project_id=-1, $offset=0, $filter="",
+function new_get_job_list( $uid, $order, $limit, $orderdir=0, $project_id=-1, $offset=0, $filter="",
                             $status=0, $published=0, $submittime=0, $embargoed=0, $countonly=0 ) {
-    $uid = get_uid( $user );
     $values = array($uid);
 
     $statidx = array ('I' => 'Pending', 'R' => 'Running', 'C' => 'Finished', 'X' => 'Deleted', 'U'=>'Pending', 'H' => 'Paused', '?' => 'Not Queued', '!' => 'Failed' );
@@ -227,7 +226,7 @@ function new_get_job_list( $user, $order, $limit, $orderdir=0, $project_id=-1, $
 
             $job_array['jid'] =$jid ;
 
-            $stat = get_job_status( $arr['staging_dir'], $jid , $user );
+            $stat = get_job_status( $arr['staging_dir'], $jid );
 
 
 
@@ -670,7 +669,7 @@ print "-->";
 }
 
 
-function get_job_status( $staging_dir, $job_id, $user_id ) {
+function get_job_status( $staging_dir, $job_id ) {
 
     $query  = "SELECT status, substatus, app_id FROM job_list WHERE job_id = ?";
     $arr    = db_query( $query, array($job_id) );
