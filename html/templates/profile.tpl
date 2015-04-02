@@ -29,16 +29,6 @@
 	</td>
 </tr>
 <tr>
-	<td>Embargo action:</td>
-	<td>
-		<select name="embargoaction">
-		<option value="publishandkeep">Publish and Keep</option>
-		<option value="publishanddelete">Publish and Delete</option>
-		<option value="delete">Delete</option>
-		<option value="nothing">No action</option>
-	</td>
-</tr>
-<tr>
 <td>Publish to DSpace</td>
 <td><input type="checkbox" name="pub_dspace" value="yes" {$profile.pub_dspace}/></td>
 </tr>
