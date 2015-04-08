@@ -73,6 +73,17 @@ switch( $action ) {
 
             $display_index = 1;
             $processed = 1;
+            if( isset($_SESSION['lastaction']) ) {
+                $_REQUEST = $_SESSION['lastaction'];
+                if( !empty( $_REQUEST['action'] ) ) {
+                    $action = strtolower( sanify( $_REQUEST['action'] ) );
+                }
+                else {
+                    $action = "default";
+                }
+                $display_index = 0;
+                $processed = 0;
+            }
         }
 
 
@@ -100,6 +111,9 @@ switch( $action ) {
 
 if( empty( $_SESSION['uid'] ) ) {
     $smarty->display('login.tpl');
+    $r = $_REQUEST;
+    unset($r['PHPSESSID']);
+    $_SESSION['lastaction'] = $r;
     exit;
 }
 
@@ -108,6 +122,7 @@ if( is_blocked( $_SESSION['username'] ) ) {
 }
 
 # Set up menus
+
 
 $menuitems =  array (
 array( "name" => "Home", "url" => "?action=index" ) ,
@@ -312,7 +327,9 @@ if(1) {
         if ( $orderdir==0 ) { $orderdir=1;}
         else {$orderdir=0;}
 
-        $num_users_jobs = new_get_job_list( $uid, $orderby, 0, $orderdir, $projectid, 0, $filter, $status, $published, $submittime, $embargoed, 1 );
+        $num_users_jobs = new_get_job_list( $uid, $orderby, 0, $orderdir,
+             $projectid, 0, $filter, $status, $published, $submittime,
+             $embargoed, 0, 1 );
 
         if( isset($_REQUEST['page']) ) {
             $r_page = sanify( $_REQUEST['page'] );
@@ -342,7 +359,9 @@ if(1) {
         while( sizeof($job_list) == 0 && $page>0 ) {
             $page--;
             $_SESSION['page']=$page;
-            $job_list = new_get_job_list( $uid, $orderby, $items_per_page, $orderdir, $projectid, $page * $items_per_page, $filter, $status, $published, $submittime, $embargoed );
+            $job_list = new_get_job_list( $uid, $orderby, $items_per_page,
+                 $orderdir, $projectid, $page * $items_per_page, $filter,
+                 $status, $published, $submittime, $embargoed, 0, 0 );
         }
 
         $avail_pages = array();
@@ -400,6 +419,7 @@ if(1) {
             $smarty->assign( "projects", $b['description'] );
             $smarty->assign( "project_idx", $b['project_id'] );
         }
+        $smarty->assign( 'url_base', '' );
         $smarty->display('joblist.tpl');
         }
 
@@ -863,7 +883,11 @@ if(1) {
 #print "<P>$pub_dspace";
 #print "<P>$pub_chempound";
 #print "<P>$pub_figshare";
-                save_profile( $_SESSION['uid'], sanify( $_REQUEST['foaf'] ), sanify( $_REQUEST['embargo'] ),  $pub_dspace, $pub_chempound, $pub_figshare );
+                save_profile( $_SESSION['uid'], sanify( $_REQUEST['foaf'] ),
+                    sanify( $_REQUEST['embargo'] ),  $pub_dspace,
+                    $pub_chempound, $pub_figshare,
+                    $_REQUEST['email'] # not sanified, might mess it up
+                            );
                 display_profile();
             break;
             default:
@@ -1020,10 +1044,11 @@ function display_index() {
     $smarty->assign( "admin_email", get_admin_email() );
     $smarty->assign( "admin_email_subject", empty($UP_options['admin_email_subject']) ? 'portal email' : $UP_options['admin_email_subject'] );
     $smarty->assign( "admin_name", empty($UP_options['admin_name']) ? 'the admin' : $UP_options['admin_name'] );
+    $smarty->assign( 'url_base', '' );
 
     $uid = $_SESSION['uid'];
-    if( $job_list = new_get_job_list( $_SESSION['username'], 6, 5, 1, -1, 0, "",
-                                    3, 0, 0, 3, 0 ) ) {
+    if( $job_list = new_get_job_list( $uid, 6, 5, 1, -1, 0, "",
+                                    3, 0, 0, 3, 0, 0 ) ) {
         $smarty->assign( "job_list", $job_list );
     }
 

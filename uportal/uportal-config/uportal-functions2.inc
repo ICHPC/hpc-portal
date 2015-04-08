@@ -99,7 +99,8 @@ function get_next_job_id() {
 }
 
 function new_get_job_list( $uid, $order, $limit, $orderdir=0, $project_id=-1, $offset=0, $filter="",
-                            $status=0, $published=0, $submittime=0, $embargoed=0, $countonly=0 ) {
+                            $status=0, $published=0, $submittime=0, $embargoed=0,
+                            $embargo_mail_sent=0, $countonly=0 ) {
     $values = array($uid);
 
     $statidx = array ('I' => 'Pending', 'R' => 'Running', 'C' => 'Finished', 'X' => 'Deleted', 'U'=>'Pending', 'H' => 'Paused', '?' => 'Not Queued', '!' => 'Failed' );
@@ -166,6 +167,9 @@ function new_get_job_list( $uid, $order, $limit, $orderdir=0, $project_id=-1, $o
     }
     if( $embargoed == 3 ) {
         $query .= " AND  a.embargo_date-current_date <= 0";
+    }
+    if( $embargo_mail_sent ) {
+        $query .= " AND a.embargo_mail_sent = false";
     }
 
     if ( $countonly == 0 ) {
@@ -2060,7 +2064,7 @@ function check_figshare( $str ) {
 }
 
 function save_profile( $uid, $foafurl, $embargo, $pub_dspace, $pub_chempound,
-                        $pub_figshare) {
+                        $pub_figshare, $email) {
 
 //  $figsharekey = check_figshare( $figsharekey );
 //  $figsharesecret = check_figshare( $figsharesecret );
@@ -2068,9 +2072,18 @@ function save_profile( $uid, $foafurl, $embargo, $pub_dspace, $pub_chempound,
     if( $embargo < 0 )  {$embargo=0;}
     if( $embargo > 999 ) { $embargo=999; }
 
-    $query = "UPDATE profile SET foafurl=?, embargo=?, pub_dspace=?, pub_chempound=?, pub_figshare=? WHERE user_id=?";
+    # Not trying to find valid email here.  Just want something non-local.
+    # Should match xxx@xxx.xxx[.xxx] strings.
+    $email = trim($email);
+    if( !preg_match( "/^.+[^\\\]@.+\..+$/", $email ) ) {
+        $email = '';
+    }
+        
+
+    $query = "UPDATE profile SET foafurl=?, embargo=?, pub_dspace=?, pub_chempound=?, pub_figshare=?,"
+            . "email_address = ? WHERE user_id=?";
     $result = db_query( $query, array( $foafurl, $embargo, $pub_dspace,
-                                $pub_chempound, $pub_figshare, $uid) );
+                                $pub_chempound, $pub_figshare, $email, $uid) );
 
 }
 
@@ -2090,7 +2103,7 @@ function get_profile( $uid ) {
     $arr = db_query( $query, array($uid) );
 
     $res = array();
-    $res['name'] =  $_SESSION['gecos'];
+    $res['name'] =  !empty($_SESSION['gecos']) ? $_SESSION['gecos'] : 'unknown';
     $res['foaf'] =  $arr['foafurl'];
     $res['orcid'] =  $arr["orcid"];
     $res['embargo'] =  $arr['embargo'];
@@ -2099,6 +2112,7 @@ function get_profile( $uid ) {
     $res['pub_dspace']    = $arr['pub_dspace']    == 1 ? "checked" : "";
     $res['pub_chempound'] = $arr['pub_chempound'] == 1 ? "checked" : "";
     $res['pub_figshare']  = $arr['pub_figshare']  == 1 ? "checked" : "";
+    $res['email'] = $arr['email_address'];
     return $res;
 }
 
@@ -2273,7 +2287,7 @@ function get_default_embargo( $user_id ) {
 }
 
 function embargo_job( $jid, $embargo_days ) {
-    $query = "UPDATE job_list SET embargo_date = current_date + CAST( ? AS INTEGER), embargo_status = 1 WHERE job_id = ?";
+    $query = "UPDATE job_list SET embargo_date = current_date + CAST( ? AS INTEGER), embargo_status = 1, embargo_mail_sent = false WHERE job_id = ?";
     $arr = db_query( $query, array($embargo_days, $jid) );
 }
 
@@ -2290,6 +2304,11 @@ function get_embargo_days( $jid ) {
     } else {
         return $arr['embargo'];
     }
+}
+
+function set_embargo_mail_sent( $jid ) {
+    $query = 'UPDATE job_list SET embargo_mail_sent = true WHERE job_id = ?';
+    $arr = db_query( $query, array($jid) );
 }
 
 

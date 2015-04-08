@@ -138,7 +138,8 @@ CREATE TABLE job_list (
     figshare_is_published boolean DEFAULT false,
     figshare_handle character varying(80),
     embargo_date date DEFAULT '0001-01-01 BC'::date NOT NULL,
-    embargo_status integer DEFAULT 0 NOT NULL
+    embargo_status integer DEFAULT 0 NOT NULL,
+    embargo_mail_sent boolean DEFAULT false NOT NULL
 );
 
 
@@ -239,7 +240,8 @@ CREATE TABLE profile (
     pub_figshare boolean DEFAULT false,
     pub_chempound boolean DEFAULT false,
     pub_dspace boolean DEFAULT true
-    orcid character varying(80)
+    orcid character varying(80),
+    email_address character varying(1024)
 );
 
 

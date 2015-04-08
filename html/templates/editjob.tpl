@@ -5,16 +5,6 @@
 
 			<h1>Edit Job {$jid}</h1>
 
-{if !is_null($embargo_days)}
-    <p> Job is under embargo  
-    {if $embargo_days > 0} for {$embargo_days} more days.
-    {else} and has passed its embargo and is awaiting
-    <a href="?action=joblist&embargoed=3&orderby=6&orderdir=0&status=3">
-        attention.</a>
-    {/if}
-{/if}
-
-
 <h2>Change Description</h2>
 
 Edit description here
@@ -56,8 +46,21 @@ Select new project for job
 embargo has passed, then lists the job on your home page with links to
 publish it.
             
+{if !is_null($embargo_days)}
+    <p> Job is under embargo  
+    {if $embargo_days > 0} for {$embargo_days} more days.
+    {else} and has passed its embargo date.
+    {/if}
+{/if}
+
+
 <form>
-Embargo for <input name=embargo_days type="textfield" size="3" value={$default_embargo_days}>
+Embargo for
+{if !is_null($embargo_days) && $embargo_days < 0}
+a further
+{/if}
+<input name=embargo_days type="textfield" size="3"
+value={$default_embargo_days}
 </input> days from today.
 <input type="hidden" name="jid"    value="{$jid}">
 <input type="hidden" name="action" value="embargojob">

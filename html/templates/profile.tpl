@@ -29,6 +29,16 @@
 	</td>
 </tr>
 <tr>
+    <td>Email address for embargo emails
+    </td>
+    <td>
+        <input name="email" value="{$profile.email}"></input>
+    </td>
+</tr>
+<tr>
+    <td>(leave blank for no emails)</td>
+</tr>
+<tr>
 <td>Publish to DSpace</td>
 <td><input type="checkbox" name="pub_dspace" value="yes" {$profile.pub_dspace}/></td>
 </tr>
