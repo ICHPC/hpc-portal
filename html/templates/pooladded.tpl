@@ -23,20 +23,20 @@
 		<td>{$pool.user}</td>
 		<td>{$pool.host}</td>
 		<td>{$pool.path}</td>
-		<td><a href="?action=pools&subaction=key&pool={$pool.pool_id}">Download</a></td>
-		<td><a href="?action=pools&subaction=list&pool={$pool.pool_id}">View</a></td>
-		<td><a href="?action=pools&subaction=status&pool={$pool.pool_id}">Status</a></td>
-		<td><a href="?action=pools&subaction=delete&pool={$pool.pool_id}">Delete</a></td>
-		<td><a href="?action=acl&pool={$pool.pool_id}">Modify</a></td>
+		<td><a href="?action=pools&amp;subaction=key&amp;pool={$pool.pool_id}">Download</a></td>
+		<td><a href="?action=pools&amp;subaction=list&amp;pool={$pool.pool_id}">View</a></td>
+		<td><a href="?action=pools&amp;subaction=status&amp;pool={$pool.pool_id}">Status</a></td>
+		<td><a href="?action=pools&amp;subaction=delete&amp;pool={$pool.pool_id}">Delete</a></td>
+		<td><a href="?action=acl&amp;pool={$pool.pool_id}">Modify</a></td>
 	<tr>
 </table>
 
 <p>The pool was added successfully.</p>
 <p>Now
-<a href="?action=pools&subaction=key&pool={$pool.pool_id}">download the key</a>
+<a href="?action=pools&amp;subaction=key&amp;pool={$pool.pool_id}">download the key</a>
 and add it to the ~{$pool.user}/.ssh/authorized_keys file on {$pool.host}.
 Once this is done
-<a href="?action=pools&subaction=refresh&pool={$pool.pool_id}">refresh the application list</a>.
+<a href="?action=pools&amp;subaction=refresh&amp;pool={$pool.pool_id}">refresh the application list</a>.
 </p>
 		</div>
 

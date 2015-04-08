@@ -19,8 +19,8 @@
 {section name=sec1 loop=$projects}
 	<tr>
 		<td>{$projects[sec1]}</td>
-		<td><a href="?action=projects&subaction=delete&project_id={$project_idx[sec1]}">Delete</a></td>
-		<td><a href="?action=joblist&byproject={$project_idx[sec1]}">View jobs</a></td>
+		<td><a href="?action=projects&amp;subaction=delete&amp;project_id={$project_idx[sec1]}">Delete</a></td>
+		<td><a href="?action=joblist&amp;byproject={$project_idx[sec1]}">View jobs</a></td>
 	<tr>
 {/section}
 </table>

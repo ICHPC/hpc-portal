@@ -62,9 +62,9 @@ Embargoed:
 	<table width="100%">
 	<tr>
     <td align="left">
-		<a href="?action=joblist&page=1">First</a>
+		<a href="?action=joblist&amp;page=1">First</a>
 		{if $suppress_prev != "1" }
-		<a href="?action=joblist&page=prev">Previous</a>
+		<a href="?action=joblist&amp;page=prev">Previous</a>
 		{/if}
 	</td>
     <td align="center">
@@ -72,15 +72,15 @@ Embargoed:
         {if $page == $avail_pages[pag]}
             {$avail_pages[pag]}
         {else}
-            <a href="?action=joblist&page={$avail_pages[pag]}">{$avail_pages[pag]}</a>
+            <a href="?action=joblist&amp;page={$avail_pages[pag]}">{$avail_pages[pag]}</a>
         {/if}
         {/section}
     </td>
 	<td align="right">
 		{if $suppress_next != "1" }
-		<a href="?action=joblist&page=next">Next</a>
+		<a href="?action=joblist&amp;page=next">Next</a>
 		{/if}
-		<a href="?action=joblist&page=last">Last</a>
+		<a href="?action=joblist&amp;page=last">Last</a>
     </td>
 	</tr>
 	</table>
@@ -90,23 +90,23 @@ Embargoed:
 		<table class="MYTABLE">
 		<thead>
 		<tr>	
-			<th ><a href="?action=joblist&orderby=0&orderdir={$orderdir}&byproject={$byproject}">Job ID</a></td>
-			<th class="MYTABLE"><a href="?action=joblist&orderby=1&orderdir={$orderdir}&byproject={$byproject}"><B>Application</B></a></td>
+			<th ><a href="?action=joblist&amp;orderby=0&amp;orderdir={$orderdir}&amp;byproject={$byproject}">Job ID</a></td>
+			<th class="MYTABLE"><a href="?action=joblist&amp;orderby=1&amp;orderdir={$orderdir}&amp;byproject={$byproject}"><B>Application</B></a></td>
 			<th class="MYTABLE"><b>Description</b></td>
-			<th class="MYTABLE"><a href="?action=joblist&orderby=2&orderdir={$orderdir}&byproject={$byproject}"><B>Submission Time</B></a></td>
-			<th class="MYTABLE"><a href="?action=joblist&orderby=3&orderdir={$orderdir}&byproject={$byproject}"><B>Wall Time</B></a></td>
-			<th class="MYTABLE"><a href="?action=joblist&orderby=4&orderdir={$orderdir}&byproject={$byproject}"><B>Status</B></a></td>
+			<th class="MYTABLE"><a href="?action=joblist&amp;orderby=2&amp;orderdir={$orderdir}&amp;byproject={$byproject}"><B>Submission Time</B></a></td>
+			<th class="MYTABLE"><a href="?action=joblist&amp;orderby=3&amp;orderdir={$orderdir}&amp;byproject={$byproject}"><B>Wall Time</B></a></td>
+			<th class="MYTABLE"><a href="?action=joblist&amp;orderby=4&amp;orderdir={$orderdir}&amp;byproject={$byproject}"><B>Status</B></a></td>
 			<th class="MYTABLE"><b>Input files</b></td>
 			<th class="MYTABLE"><b>Output files</b></td>
 			<th class="MYTABLE"><b>Delete</b></td>
-			<th class="MYTABLE"><a href="?action=joblist&orderby=5&orderdir={$orderdir}&byproject={$byproject}"><b>Repository</b></a></td>
-			<th class="MYTABLE"><a href="?action=joblist&orderby=6&orderdir={$orderdir}&byproject={$byproject}"><b>Embargo</b></a></td>
+			<th class="MYTABLE"><a href="?action=joblist&amp;orderby=5&amp;orderdir={$orderdir}&amp;byproject={$byproject}"><b>Repository</b></a></td>
+			<th class="MYTABLE"><a href="?action=joblist&amp;orderby=6&amp;orderdir={$orderdir}&amp;byproject={$byproject}"><b>Embargo</b></a></td>
 		</tr>
 		</thead>
 
 {section name=sec1 loop=$job_list}
 	<tr>
-		<td class="MYTABLE"><a href="?action=editjob&jid={$job_list[sec1].jid}">{$job_list[sec1].jid}</a></td>
+		<td class="MYTABLE"><a href="?action=editjob&amp;jid={$job_list[sec1].jid}">{$job_list[sec1].jid}</a></td>
 		<td class="MYTABLE">{$job_list[sec1].app_name}</td>
 		<td class="MYTABLE">{$job_list[sec1].description}</td>
 		<td class="MYTABLE">{$job_list[sec1].submit_time}</td>
@@ -148,19 +148,19 @@ Embargoed:
 
 
 
-		<!--<td class="MYTABLE"><a href="?action=delete&jid={$job_list[sec1].jid}&orderby={$orderby}&orderdir={$orderdir}&byproject={$byproject}">Delete</a></td>-->
-		<td class="MYTABLE"><a href="?action=delete&jid={$job_list[sec1].jid}">Delete</a></td>
+		<!--<td class="MYTABLE"><a href="?action=delete&amp;jid={$job_list[sec1].jid}&amp;orderby={$orderby}&amp;orderdir={$orderdir}&amp;byproject={$byproject}">Delete</a></td>-->
+		<td class="MYTABLE"><a href="?action=delete&amp;jid={$job_list[sec1].jid}">Delete</a></td>
 
     {include file="publish_inc.tpl"}
     <!-- Embargo -->
     {if $job_list[sec1].embargo_status != 0}
 		<td class="MYTABLE">{$job_list[sec1].embargo}
         day{if abs($job_list[sec1].embargo) != 1}s{/if}
-        <a href="?action=cancelembargojob&jid={$job_list[sec1].jid}">
+        <a href="?action=cancelembargojob&amp;jid={$job_list[sec1].jid}">
         (cancel)</a></td>
     {else}
         <td class="MYTABLE">
-            <a href="?action=embargojob&jid={$job_list[sec1].jid}">Embargo</a>
+            <a href="?action=embargojob&amp;jid={$job_list[sec1].jid}">Embargo</a>
         </td>
     {/if}
 	</tr>
@@ -172,9 +172,9 @@ Embargoed:
 	<table width="100%">
 	<tr>
     <td align="left">
-		<a href="?action=joblist&page=1">First</a>
+		<a href="?action=joblist&amp;page=1">First</a>
 		{if $suppress_prev != "1" }
-		<a href="?action=joblist&page=prev">Previous</a>
+		<a href="?action=joblist&amp;page=prev">Previous</a>
 		{/if}
 	</td>
     <td align="center">
@@ -182,15 +182,15 @@ Embargoed:
         {if $page == $avail_pages[pag]}
             {$avail_pages[pag]}
         {else}
-            <a href="?action=joblist&page={$avail_pages[pag]}">{$avail_pages[pag]}</a>
+            <a href="?action=joblist&amp;page={$avail_pages[pag]}">{$avail_pages[pag]}</a>
         {/if}
         {/section}
     </td>
 	<td align="right">
 		{if $suppress_next != "1" }
-		<a href="?action=joblist&page=next">Next</a>
+		<a href="?action=joblist&amp;page=next">Next</a>
 		{/if}
-		<a href="?action=joblist&page=last">Last</a>
+		<a href="?action=joblist&amp;page=last">Last</a>
     </td>
 	</tr>
 	</table>

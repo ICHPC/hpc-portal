@@ -21,7 +21,7 @@
 
 {if $job_list}
 <p>The following jobs have passed their embargoes and need
-<a href="?action=joblist&embargoed=3&orderby=6&orderdir=0&status=3">
+<a href="?action=joblist&amp;embargoed=3&amp;orderby=6&amp;orderdir=0&amp;status=3">
 attention</a>.</p>
 <table class="MYTABLE">
 <thead>
@@ -39,14 +39,14 @@ attention</a>.</p>
 
 {section name=sec1 loop=$job_list}
     <tr>
-        <td><a href="?action=editjob&jid={$job_list[sec1].jid}">{$job_list[sec1].jid}</a></td>
+        <td><a href="?action=editjob&amp;jid={$job_list[sec1].jid}">{$job_list[sec1].jid}</a></td>
         <td>{$job_list[sec1].app_name}</td>
         <td>{$job_list[sec1].description}</td>
         <td>{$job_list[sec1].submit_time}</td>
-        <td><a href="?action=delete&jid={$job_list[sec1].jid}">Delete</a></td>
+        <td><a href="?action=delete&amp;jid={$job_list[sec1].jid}">Delete</a></td>
 
         {include file="publish_inc.tpl"}
-        <td><a href="?action=cancelembargojob&jid={$job_list[sec1].jid}">
+        <td><a href="?action=cancelembargojob&amp;jid={$job_list[sec1].jid}">
             Cancel</a></td>
         <td>{$job_list[sec1].embargo_date}</td>
     </tr>

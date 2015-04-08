@@ -386,7 +386,7 @@ if(1) {
         $proto = $UP_options['protocol'];
         $host  = $_SERVER['HTTP_HOST'];
         $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
-        $extra = "?action=joblist&?byproject=-1&filter=&published=0&status=0&submittime=0&embargoed=0";
+        $extra = "?action=joblist&amp;byproject=-1&amp;filter=&amp;published=0&amp;status=0&amp;submittime=0&amp;embargoed=0";
         $clearurl = "$proto://$host$uri/$extra";
 
         $smarty->assign( "numperpages", $numperpages );
@@ -697,7 +697,7 @@ if(1) {
             $proto = $UP_options['protocol'];
             $host  = $_SERVER['HTTP_HOST'];
             $uri   = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
-            $extra = "?action=acl&pool=$pool_id";
+            $extra = "?action=acl&amp;pool=$pool_id";
             header("Location: $proto://$host$uri/$extra");
             break;
 

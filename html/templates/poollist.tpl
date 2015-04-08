@@ -28,11 +28,11 @@
 		<td>{$pools[sec1].host}</td>
 		<td>{$pools[sec1].user}</td>
 		<td>{$pools[sec1].path}</td>
-		<td><a href="?action=pools&subaction=key&pool={$pools[sec1].pool_id}">Download</a></td>
-		<td><a href="?action=pools&subaction=list&pool={$pools[sec1].pool_id}">View</a></td>
-		<td><a href="?action=pools&subaction=status&pool={$pools[sec1].pool_id}">Status</a></td>
-		<td><a href="?action=pools&subaction=delete&pool={$pools[sec1].pool_id}">Delete</a></td>
-		<td><a href="?action=acl&pool={$pools[sec1].pool_id}">Modify</a></td>
+		<td><a href="?action=pools&amp;subaction=key&amp;pool={$pools[sec1].pool_id}">Download</a></td>
+		<td><a href="?action=pools&amp;subaction=list&amp;pool={$pools[sec1].pool_id}">View</a></td>
+		<td><a href="?action=pools&amp;subaction=status&amp;pool={$pools[sec1].pool_id}">Status</a></td>
+		<td><a href="?action=pools&amp;subaction=delete&amp;pool={$pools[sec1].pool_id}">Delete</a></td>
+		<td><a href="?action=acl&amp;pool={$pools[sec1].pool_id}">Modify</a></td>
 	<tr>
 	{/if}
 {/section}
@@ -57,8 +57,8 @@
 	<tr>
 		<td>{$pools[sec1].description}</td>
 		<td>{$pools[sec1].host}</td>
-		<td><a href="?action=pools&subaction=list&pool={$pools[sec1].pool_id}">View</a></td>
-		<td><a href="?action=pools&subaction=status&pool={$pools[sec1].pool_id}">Status</a></td>
+		<td><a href="?action=pools&amp;subaction=list&amp;pool={$pools[sec1].pool_id}">View</a></td>
+		<td><a href="?action=pools&amp;subaction=status&amp;pool={$pools[sec1].pool_id}">Status</a></td>
 	<tr>
 	{/if}
 {/section}

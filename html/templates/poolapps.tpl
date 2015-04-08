@@ -59,7 +59,7 @@
 {/if}
 
 {if $mypool}
-<p><a href="?action=pools&subaction=refresh&pool={$pool}">Refresh Application List</a>
+<p><a href="?action=pools&amp;subaction=refresh&amp;pool={$pool}">Refresh Application List</a>
 {/if}
 
 
