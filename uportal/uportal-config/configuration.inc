@@ -13,6 +13,9 @@ if( !$UP_options ) {
     die;
 }
 
+# Version number
+$UP_options['version'] = '1.1';
+
 ###############################################################################
 ### Error reporting.
 if( isset($UP_options['error_reporting']))

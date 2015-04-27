@@ -14,11 +14,13 @@ $smarty->debugging = false;
 $smarty->force_compile = true;
 $smarty->compile_dir = $UP_options['smarty_compile_dir'];
 
+session_name( 'UPORTAL' . $UP_options['version'] );
 session_start();
 
 $menuitems =  array ();
 $smarty->assign( "menulinks", $menuitems ) ;
 $smarty->assign('error', null);
+$smarty->assign('version', $UP_options['version']);
 
 if( !empty( $_SESSION['gecos'] ) ) {
     # Set username in template
