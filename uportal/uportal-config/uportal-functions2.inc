@@ -103,7 +103,7 @@ function new_get_job_list( $uid, $order, $limit, $orderdir=0, $project_id=-1, $o
                             $embargo_mail_sent=0, $countonly=0 ) {
     $values = array($uid);
 
-    $statidx = array ('I' => 'Pending', 'R' => 'Running', 'C' => 'Finished', 'X' => 'Deleted', 'U'=>'Pending', 'H' => 'Paused', '?' => 'Not Queued', '!' => 'Failed' );
+    $statidx = array ('I' => 'Pending', 'R' => 'Running', 'C' => 'Finished', 'X' => 'Deleted', 'U'=>'Pending', 'H' => 'Paused', '?' => 'Not Queued', '!' => 'Failed', ' ' => 'Unknown' );
     $statq = array( 'I', 'R', 'C', 'O' );
 
     $orderby = array ( 'job_id' , 'a.app_id' , 'submit_time', 'wall_time',  'status', 'is_published', 'embargo' );
@@ -711,6 +711,11 @@ function get_job_status( $staging_dir, $job_id ) {
 #print "<!--";
 #print_r ($output);
 #print "-->\n";
+
+    if( empty($output) ) {
+        $ret = array ( 0=> ' ', 1=> ' ' ); # unknown
+        return $ret;
+    }
 
     $status = substr( sanify( $output[0] ), 0, 2 );
     $substatus = substr( sanify( $output[1] ), 0 , 2);
