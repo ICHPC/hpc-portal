@@ -14,7 +14,7 @@ if( !$UP_options ) {
 }
 
 # Version number
-$UP_options['version'] = '1.1';
+$UP_options['version'] = '1_1';
 
 ###############################################################################
 ### Error reporting.
