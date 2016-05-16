@@ -9,9 +9,12 @@ include_once '../uportal/oauth/OAuthRequester.php';
 
 require '../uportal/uportal-config/uportal-functions2.inc';
 require '../uportal/uportal-config/dspace-functions.inc';
-session_start();
 
 global $UP_options;
+
+session_name( 'UPORTAL' . $UP_options['version'] );
+session_start();
+
  if( array_key_exists( 'uid', $_SESSION ) && isset( $_SESSION['uid'] ) ) {
 	$uid = $_SESSION['uid'];
 	testapiAction( make_figshare_nonce($uid) );

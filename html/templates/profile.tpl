@@ -51,6 +51,12 @@
 <td>Publish to Figshare</td>
 <td><input type="checkbox" name="pub_figshare" value="yes" {$profile.pub_figshare}/></td>
 </tr>
+<tr>
+<td>Publish to HPC Data Repository</td>
+<td><input type="checkbox" name="pub_hpc" value="yes" {$profile.pub_hpc}/></td>
+</tr>
+
+
 
 
 
@@ -65,6 +71,7 @@
 
 <p><a href="figshare-auth.php">Link to Figshare</a>
 <p><a href="orcid-auth.php">Link to ORCID</a>
+<p><a href="hpc-auth.php">Link to HPC Data Repository</a>
 
 </div>
 

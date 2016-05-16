@@ -81,7 +81,7 @@ function figshare_publish( $app_id, $jid, $user_id ) {
 
     $staging_dir = $arr['staging_dir' ];
 
-    #3. run teh publish-figshare script
+    #3. run the publish-figshare script
 
     $UP_publish              = $UP_options['publish-figshare'];
 
@@ -274,6 +274,7 @@ function dspace_publish(  $app_id, $jid, $user_id ) {
     $cmdarray = array( $UP_options['dspace_importer'], $tmpfile);
     $cmd = escapearguments( $cmdarray );
 
+    print("<!-- $cmd -->\n" );
     exec( $cmd, $output );
 
 
@@ -445,6 +446,85 @@ print "figshare_uploader_upload: No FIGSHARE credentials [$fskey] [$fssecret]";
 }
 function figshare_uploader_show() {
 }
+
+
+function hpc_repo_publish( $app_id, $jid, $user_id ) {
+	global $UP_config;
+    # This is quick and dirty. Always assume job type is 'gaussian'
+
+    # 1. Get figshare credentials
+    global $UP_options;
+
+    $query = "SELECT hpc_repo_is_published FROM job_list WHERE job_id = ?";
+    $arr = db_query( $query, array($jid) );
+
+    if ( $arr['hpc_repo_is_published'] === true || $arr['hpc_repo_is_published'] === 't' ) { return; }
+
+    $query = "SELECT hpcportalkey FROM profile WHERE user_id = ?";
+    $arr = db_query( $query, array($user_id) );
+    $tokkey     = $arr[ 'hpcportalkey' ];
+
+    if( $tokkey === "" || $tokkey === null ) {
+        return;
+    }
+
+    #2. Get job directory
+    #pg_prepare( $dbconn, "fpq2", "SELECT staging_dir FROM job_list WHERE job_id = $1" );
+    #$results = pg_execute( $dbconn, "fpq2", array( $jid ) );
+    $query = "SELECT staging_dir FROM job_list WHERE job_id = ?";
+    $arr = db_query( $query, array($jid) );
+
+    $staging_dir = $arr['staging_dir' ];
+
+    #3. run the publish-figshare script
+
+    $UP_publish              = $UP_options['hpc-repo-publish-cmd'];
+
+    $app_user = get_app_user( $app_id );
+    $app_host = get_app_host( $app_id );
+    $app_path = get_app_path( $app_id );
+
+    $project_id = get_project_by_jid( $jid );
+    $project  = get_project_name( $user_id, $project_id );
+    $project = str_replace( " ", "_" , $project );
+    $project = str_replace( "'", "" , $project );
+    $project = str_replace( '"', "" , $project );
+    $project = str_replace( '\\', "" , $project );
+
+    $key = make_key_name_from_app( $app_id );
+
+    $cmdarray = array(
+        "$app_path/$UP_publish",
+        $staging_dir,
+        'gaussian',
+				$UP_options['hpc_repo_user'],
+				$UP_options['hpc_repo_password'],
+				$tokkey,
+        $project
+        );
+    $cmd = make_ssh_cmd( $key, $app_user, $app_host, $cmdarray );
+    $foo= array();
+    exec( $cmd,  $foo );
+    echo "<!-- $cmd </br> -->";
+    print_r( $foo );
+
+    if( strstr( $foo[0], "DOI:" ) != FALSE ) {
+        $url = str_replace( "DOI: ", "", $foo[0] );
+
+        #pg_prepare( $dbconn, "fpq3", "UPDATE job_list SET figshare_handle=$1, figshare_is_published=true, is_published=true WHERE job_id = $2" );
+        #$results = pg_execute( $dbconn, "fpq3", array( $url, $jid ) );
+        $query = "UPDATE job_list SET hpc_repo_handle=?, hpc_repo_is_published=true, is_published=true WHERE job_id = ?";
+        $arr = db_query( $query, array($url, $jid) );
+        return $url;
+
+    }
+    else {
+        return null;
+    }
+
+
+}
+
 
 
 

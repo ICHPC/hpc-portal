@@ -9,7 +9,7 @@
 
 Edit description here
 <form>
-<input name=description type="textfield" value={$description}>
+<input name=description type="textfield" value="{$description}" size=80>
 <input type="hidden" name="action" value="editjobdesc">
 <input type="hidden" name="jid"    value="{$jid}">
 

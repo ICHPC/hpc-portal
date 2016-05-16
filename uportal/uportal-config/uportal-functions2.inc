@@ -103,8 +103,8 @@ function new_get_job_list( $uid, $order, $limit, $orderdir=0, $project_id=-1, $o
                             $embargo_mail_sent=0, $countonly=0 ) {
     $values = array($uid);
 
-    $statidx = array ('I' => 'Pending', 'R' => 'Running', 'C' => 'Finished', 'X' => 'Deleted', 'U'=>'Pending', 'H' => 'Paused', '?' => 'Not Queued', '!' => 'Failed', ' ' => 'Unknown' );
-    $statq = array( 'I', 'R', 'C', 'O' );
+    $statidx = array ( 'E' => 'Error', 'I' => 'Pending', 'R' => 'Running', 'C' => 'Finished', 'X' => 'Deleted', 'U'=>'Pending', 'H' => 'Paused', '?' => 'Not Queued', '!' => 'Failed', ' ' => 'Unknown' );
+    $statq = array(  'I', 'R', 'C', 'O' );
 
     $orderby = array ( 'job_id' , 'a.app_id' , 'submit_time', 'wall_time',  'status', 'is_published', 'embargo' );
 
@@ -327,6 +327,7 @@ function new_get_job_list( $uid, $order, $limit, $orderdir=0, $project_id=-1, $o
                         if( ! strstr( $arr['figshare_handle'], "figshare" ) ) {
                             $job_array['figshare_draft']  = "1";
                         }
+                        $job_array['hpc_repo']  = $arr[ 'hpc_repo_handle' ];
                     }
                     else {
                         $job_array['publish'] = 'publish';
@@ -2069,7 +2070,7 @@ function check_figshare( $str ) {
 }
 
 function save_profile( $uid, $foafurl, $embargo, $pub_dspace, $pub_chempound,
-                        $pub_figshare, $email) {
+                        $pub_figshare, $pub_hpc, $email) {
 
 //  $figsharekey = check_figshare( $figsharekey );
 //  $figsharesecret = check_figshare( $figsharesecret );
@@ -2085,23 +2086,27 @@ function save_profile( $uid, $foafurl, $embargo, $pub_dspace, $pub_chempound,
     }
         
 
-    $query = "UPDATE profile SET foafurl=?, embargo=?, pub_dspace=?, pub_chempound=?, pub_figshare=?,"
+    $query = "UPDATE profile SET foafurl=?, embargo=?, pub_dspace=?, pub_chempound=?, pub_figshare=?, pub_hpc=?,"
             . "email_address = ? WHERE user_id=?";
     $result = db_query( $query, array( $foafurl, $embargo, $pub_dspace,
-                                $pub_chempound, $pub_figshare, $email, $uid) );
+                                $pub_chempound, $pub_figshare, $pub_hpc, $email, $uid) );
 
 }
 
 function add_profile( $uid ) {
-    $query = "INSERT INTO profile (user_id, pub_dspace ) VALUES ( ?, true )";
+    $query = "SELECT count(*) FROM profile WHERE user_id = ?";
+    $result= db_query( $query, array($uid) );
+    if( $result['count'] == 0 ) {
+	    $query = "INSERT INTO profile (user_id, pub_dspace, pub_hpc ) VALUES ( ?, true, false )";
 
-    $result = db_query( $query, array($uid) );
-
+  	  $result = db_query( $query, array($uid) );
+		}
 
 }
 
 function get_profile( $uid ) {
 
+	add_profile($uid);
 
     $query = "SELECT * FROM profile WHERE user_id = ?";
 
@@ -2117,6 +2122,7 @@ function get_profile( $uid ) {
     $res['pub_dspace']    = $arr['pub_dspace']    == 1 ? "checked" : "";
     $res['pub_chempound'] = $arr['pub_chempound'] == 1 ? "checked" : "";
     $res['pub_figshare']  = $arr['pub_figshare']  == 1 ? "checked" : "";
+    $res['pub_hpc']       = $arr['pub_hpc']  == 1 ? "checked" : "";
     $res['email'] = $arr['email_address'];
     return $res;
 }
@@ -2200,7 +2206,8 @@ function get_motd( $user ) {
 function get_job_description( $jid ) {
     $query="SELECT description FROM job_list WHERE job_id = ?";
     $arr= db_query($query, array($jid));
-    return $arr['description'];
+		$desc=$arr['description'];
+    return $desc;
 }
 
 function set_job_description( $jid, $desc ) {

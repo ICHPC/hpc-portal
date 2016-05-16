@@ -15,6 +15,11 @@
                 <a href="http://dx.doi.org/{$job_list[sec1].figshare}">Figshare</a></br>
             {/if}
     {/if}
+    {if !empty($job_list[sec1].hpc_repo) }
+                <a href="http://doi.org/{$job_list[sec1].hpc_repo}">HPC Repo</a></br>
+    {/if}
+
+
 
     </td>
 {elseif $job_list[sec1].publish == "na" }

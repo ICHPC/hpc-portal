@@ -26,7 +26,7 @@ Computing Portal
 
 	<div id="top">  
 		<div id="topleft"> 
-			<a href="http://www.google.co.uk/" tabindex="1">Institution Home Page</a>
+<!--			<a href="http://www.google.co.uk/" tabindex="1">Institution Home Page</a> -->
 	  </div>
 	  <div id="topright">
 		{if !empty($gecos)}
@@ -68,7 +68,7 @@ overflow: hidden;">
 <!-- for example
 <a href="http://www.imperial.ac.uk/ict/services/hpc/highperformancecomputing"  style="color: #FFFFFF;text-decoration: none;">Imperial College Computing Portal</a>
 -->
-<a href=""  style="color: #FFFFFF;text-decoration: none;">Computing Portal</a>
+<a href=""  style="color: #FFFFFF;text-decoration: none;">HPC Service Computing Portal</a>
 </td> 
 
 </tr></table>

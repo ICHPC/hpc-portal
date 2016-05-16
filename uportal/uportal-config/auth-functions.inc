@@ -16,12 +16,23 @@ function ldap_authenticate( $user, $password ) {
             if (array_key_exists(0,$result) && $result[0]) {
                 if (@ldap_bind( $ds, $result[0]['dn'], $password) ) {
                         # SJC: unbind
-						return  ($result[0]['gecos'][0] );
+									error_log( "ldap_authenticate [".$user."] - SUCCESS\n", 3, "/var/tmp/portal-login.log" );
+									return  ($result[0]['gecos'][0] );
                 }
+								else {
+									error_log( "ldap_authenticate [".$user."] - FAILED bind (bad password)\n", 3, "/var/tmp/portal-login.log" );
+								}
             }
+						else {
+							error_log( "ldap_authenticate [".$user."] - FAILED search for fn [ " . $UP_options['ldap_basedn'][$i] ."]\n", 3, "/var/tmp/portal-login.log" );
+						}
         }
+				else {
+							error_log( "ldap_authenticate [".$user."] - FAILED unexpected error from ldap_search()\n", 3, "/var/tmp/portal-login.log" );
+				}
 			}
 
+		error_log( "ldap_authenticate [".$user."] - FAILED \n", 3, "/var/tmp/portal-login.log" );
     return NULL;
 }
 

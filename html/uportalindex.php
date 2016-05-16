@@ -34,8 +34,6 @@ else {
     $action = "default";
 }
 
-
-
 $processed = 0;
 $display_index = 0;
 
@@ -49,6 +47,10 @@ switch( $action ) {
         }
         $gecos = authenticate( $_REQUEST['username'], $password  );
         # username now sanified
+# SU for matt
+#if( $_REQUEST['username'] === 'mjharvey' ) {
+#	$_REQUEST['username'] = 'ab1815';
+#}
         $username = sanify( $_REQUEST['username'] );
 
         if( empty ( $gecos ) ) {
@@ -221,16 +223,22 @@ print "<!-- pub to chempound\n-->";
 print "<!-- pub to figshare\n-->";
                     $handle2 = figshare_publish( $app_id, $jid, $_SESSION['uid'] );
                 }
-                if( !($profile['pub_dspace'] === "checked") && !($profile['pub_chempound'] === "checked" ) && !( $profile['pub_figshare'] === "checked" ) ) {
+                if( $profile['pub_hpc'] === "checked" ) {
+print "<!-- pub to figshare\n-->";
+                    $handle3 = hpc_repo_publish( $app_id, $jid, $_SESSION['uid'] );
+                }
+
+                if( !($profile['pub_hpc'] === 'checked') && !($profile['pub_dspace'] === "checked") && !($profile['pub_chempound'] === "checked" ) && !( $profile['pub_figshare'] === "checked" ) ) {
                     fatal_error( "You have no publication methods enabled. Fix this in your profile." );
                 }
 print "<!--";
 if (!empty($handle)) {print "<p>DSPACE: $handle\n"; }
 if (!empty($handle2)) {print "<p>Figshare: $handle2\n"; }
+if (!empty($handle3)) {print "<p>HPC Repo: $handle2\n"; }
 if (!empty($url)) {print "<p>Chempound: $url\n"; }
 print "-->\n";
 if(1) {
-                if( empty($handle) && empty($handle2) && empty($url) ) {
+                if( empty($handle) && empty($handle2) && empty($handle3) && empty($url) ) {
                     fatal_error( "Unable to publish. Please send the job ID to " . get_admin_email() );
                 }
                 else {
@@ -367,12 +375,16 @@ if(1) {
         }
 
         $avail_pages = array();
-        $avail_pages[] = 1;
-        $apage = 2;
-        while( $apage <= ceil($num_users_jobs/$items_per_page) ) {
-            $avail_pages[] = $apage;
+        #$avail_pages[] = 1;
+        #$apage = 2;
+        $apage=1;
+        while( ($apage <= ceil($num_users_jobs/$items_per_page)) ) {
+            if( ( ($apage%10) == 0 )  || ( $apage < $page+5 &&  $apage > $page -5 ) ) { # ($apage < ($page+5)) || ($apage > ($page-5))    || ($apage % 10 == 0 ) ) {
+               $avail_pages[] = $apage;
+            }
             $apage++;
         }
+#print_r($avail_pages);
 
         $statuses = array("any", "pending", "running", "finished", "other");
 
@@ -845,7 +857,7 @@ if(1) {
 
 
     case 'uploader':
-        if( NULL != figshare_has_credentials( $_SESSION['uid'] ) ) {
+        if( NULL == figshare_has_credentials( $_SESSION['uid'] ) ) {
             $smarty->display( "figshare.tpl" );
         }
         else {
@@ -881,13 +893,14 @@ if(1) {
                 $pub_dspace = array_key_exists( "pub_dspace", $_REQUEST ) ? 1 : 0;
                 $pub_chempound = array_key_exists( "pub_chempound", $_REQUEST ) ? 1 : 0 ;
                 $pub_figshare = array_key_exists( "pub_figshare", $_REQUEST ) ? 1 : 0;
+                $pub_hpc = array_key_exists( "pub_hpc", $_REQUEST ) ? 1 : 0;
 
 #print "<P>$pub_dspace";
 #print "<P>$pub_chempound";
 #print "<P>$pub_figshare";
                 save_profile( $_SESSION['uid'], sanify( $_REQUEST['foaf'] ),
                     sanify( $_REQUEST['embargo'] ),  $pub_dspace,
-                    $pub_chempound, $pub_figshare,
+                    $pub_chempound, $pub_figshare, $pub_hpc,
                     $_REQUEST['email'] # not sanified, might mess it up
                             );
                 display_profile();
@@ -929,13 +942,12 @@ if(1) {
         $app_id = get_app_id_for_job( $jid );
         $smarty->assign( "jid", $jid );
         # SJC description
-		$smarty->assign( "description", get_job_description( $jid ) );
+				$smarty->assign( "description", get_job_description( $jid ) );
 
         $b=get_projects( $uid );
 
 
         $projectid   = get_project_by_jid( $jid );
-
         while(list(,$v)=each($b['description'])) {
             $c['description'][] = $v;
         }
